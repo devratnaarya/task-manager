@@ -187,40 +187,40 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .breakdown-value {
-  padding: 0.375rem 0.875rem;
-  border-radius: 20px;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
   font-weight: 600;
   font-size: 0.875rem;
 }
 
 .todo-badge {
-  background: #edf2f7;
-  color: #4a5568;
+  background: #F1F5F9;
+  color: #475569;
 }
 
 .progress-badge {
-  background: #dbeafe;
-  color: #1e40af;
+  background: #DBEAFE;
+  color: #1E40AF;
 }
 
 .review-badge {
-  background: #fef3c7;
-  color: #92400e;
+  background: #FEF3C7;
+  color: #92400E;
 }
 
 .done-badge {
-  background: #d1fae5;
-  color: #065f46;
+  background: #D1FAE5;
+  color: #065F46;
 }
 
 .high-priority-badge {
-  background: #fecaca;
-  color: #991b1b;
+  background: #FEE2E2;
+  color: #991B1B;
 }
 
 .critical-priority-badge {
-  background: #fca5a5;
-  color: #7f1d1d;
+  background: #FCA5A5;
+  color: #7F1D1D;
 }
 
 /* Quick Actions */
