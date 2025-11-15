@@ -12,10 +12,30 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-import { ArrowLeft, Edit2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Edit2, Plus, Trash2, LogOut } from "lucide-react";
+import { useUser } from "@/UserContext";
+import { Login } from "@/Login";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Axios interceptor to add headers
+axios.interceptors.request.use((config) => {
+  const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+  const org = JSON.parse(localStorage.getItem('currentOrganization') || 'null');
+  
+  if (user) {
+    config.headers['X-User-Name'] = user.name;
+    config.headers['X-User-Role'] = user.role;
+  }
+  if (org) {
+    config.headers['X-Organization-ID'] = org.id;
+  } else {
+    config.headers['X-Organization-ID'] = 'null';
+  }
+  
+  return config;
+});
 
 const Sidebar = () => {
   return (
