@@ -1140,9 +1140,9 @@ const KanbanBoard = () => {
         </div>
         <div className="header-actions">
           {projects.length > 0 && (
-            <Select value={selectedProject} onValueChange={setSelectedProject}>
+            <Select value={selectedProject || ""} onValueChange={setSelectedProject}>
               <SelectTrigger className="project-selector-sm" data-testid="kanban-project-selector">
-                <SelectValue />
+                <SelectValue placeholder="Select project" />
               </SelectTrigger>
               <SelectContent>
                 {projects.map(project => (
