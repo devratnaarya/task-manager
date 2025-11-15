@@ -431,9 +431,12 @@ async def get_users(org_id: str = Depends(get_organization_id)):
             user['created_at'] = datetime.fromisoformat(user['created_at'])
     return users
 
-@api_router.get("/users/{user_id}", response_model=User)
+@api_router.get("/users/{user_id}")
 async def get_user(user_id: str, org_id: str = Depends(get_organization_id)):
-    user = await db.users.find_one({"id": user_id, "organization_id": org_id}, {"_id": 0})
+    query = {"id": user_id}
+    if org_id != "null":
+        query["organization_id"] = org_id
+    user = await db.users.find_one(query, {"_id": 0, "password": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if isinstance(user['created_at'], str):
