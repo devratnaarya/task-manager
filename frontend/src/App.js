@@ -640,11 +640,381 @@ const Projects = () => {
   );
 };
 
+const StoryDetail = () => {
+  const { storyId } = useParams();
+  const navigate = useNavigate();
+  const [story, setStory] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [stories, setStories] = useState([]);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showTaskDialog, setShowTaskDialog] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [taskForm, setTaskForm] = useState({
+    title: "",
+    description: "",
+    assigned_to: "",
+    start_date: "",
+    end_date: "",
+    target_date: "",
+    story_points: "",
+    priority: "Medium",
+    type: "Task",
+    team: "Development"
+  });
+
+  useEffect(() => {
+    fetchStory();
+    fetchTasks();
+    fetchTeamMembers();
+  }, [storyId]);
+
+  const fetchStory = async () => {
+    try {
+      const response = await axios.get(`${API}/stories/${storyId}`);
+      setStory(response.data);
+      setEditForm(response.data);
+    } catch (e) {
+      console.error("Error fetching story:", e);
+      toast.error("Failed to load story");
+    }
+  };
+
+  const fetchTasks = async () => {
+    try {
+      const response = await axios.get(`${API}/tasks?story_id=${storyId}`);
+      setTasks(response.data);
+    } catch (e) {
+      console.error("Error fetching tasks:", e);
+    }
+  };
+
+  const fetchTeamMembers = async () => {
+    try {
+      const response = await axios.get(`${API}/team`);
+      setTeamMembers(response.data);
+    } catch (e) {
+      console.error("Error fetching team members:", e);
+    }
+  };
+
+  const updateStory = async () => {
+    try {
+      await axios.patch(`${API}/stories/${storyId}`, editForm);
+      toast.success("Story updated successfully");
+      setShowEditDialog(false);
+      fetchStory();
+    } catch (e) {
+      console.error("Error updating story:", e);
+      toast.error("Failed to update story");
+    }
+  };
+
+  const createTask = async () => {
+    if (!story) return;
+    try {
+      await axios.post(`${API}/tasks`, { 
+        ...taskForm, 
+        project_id: story.project_id,
+        story_id: story.id 
+      });
+      toast.success("Task created successfully");
+      setShowTaskDialog(false);
+      setTaskForm({
+        title: "",
+        description: "",
+        assigned_to: "",
+        start_date: "",
+        end_date: "",
+        target_date: "",
+        story_points: "",
+        priority: "Medium",
+        type: "Task",
+        team: "Development"
+      });
+      fetchTasks();
+    } catch (e) {
+      console.error("Error creating task:", e);
+      toast.error("Failed to create task");
+    }
+  };
+
+  if (!story) return <div className="loading" data-testid="loading">Loading...</div>;
+
+  return (
+    <div className="page-container" data-testid="story-detail-page">
+      <div className="story-detail-header">
+        <Button variant="ghost" onClick={() => navigate(-1)} data-testid="back-button">
+          <ArrowLeft className="mr-2" size={16} />
+          Back
+        </Button>
+      </div>
+
+      <div className="story-detail-content">
+        <Card className="story-main-card">
+          <CardHeader>
+            <div className="story-header-actions">
+              <div>
+                <CardTitle className="story-detail-title">{story.title}</CardTitle>
+                <span className={`priority-badge priority-${story.priority.toLowerCase()}`}>
+                  {story.priority} Priority
+                </span>
+              </div>
+              <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" data-testid="edit-story-btn">
+                    <Edit2 size={16} className="mr-2" />
+                    Edit Story
+                  </Button>
+                </DialogTrigger>
+                <DialogContent data-testid="edit-story-dialog">
+                  <DialogHeader>
+                    <DialogTitle>Edit Story</DialogTitle>
+                  </DialogHeader>
+                  <div className="form-group">
+                    <Label>Title</Label>
+                    <Input
+                      data-testid="edit-story-title"
+                      value={editForm.title || ""}
+                      onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <Label>Description</Label>
+                    <Textarea
+                      data-testid="edit-story-description"
+                      value={editForm.description || ""}
+                      onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <Label>BRD</Label>
+                    <Textarea
+                      data-testid="edit-story-brd"
+                      value={editForm.brd || ""}
+                      onChange={(e) => setEditForm({ ...editForm, brd: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <Label>PRD</Label>
+                    <Textarea
+                      data-testid="edit-story-prd"
+                      value={editForm.prd || ""}
+                      onChange={(e) => setEditForm({ ...editForm, prd: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <Label>Priority</Label>
+                    <Select value={editForm.priority} onValueChange={(value) => setEditForm({ ...editForm, priority: value })}>
+                      <SelectTrigger data-testid="edit-story-priority">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Low">Low</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="High">High</SelectItem>
+                        <SelectItem value="Critical">Critical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={updateStory} data-testid="update-story-btn">Update Story</Button>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="story-detail-section">
+              <h3>Description</h3>
+              <p>{story.description}</p>
+            </div>
+            {story.brd && (
+              <div className="story-detail-section">
+                <h3>Business Requirements Document (BRD)</h3>
+                <p>{story.brd}</p>
+              </div>
+            )}
+            {story.prd && (
+              <div className="story-detail-section">
+                <h3>Product Requirements Document (PRD)</h3>
+                <p>{story.prd}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="story-tasks-section">
+          <div className="section-header">
+            <h2>Tasks ({tasks.length})</h2>
+            <Dialog open={showTaskDialog} onOpenChange={setShowTaskDialog}>
+              <DialogTrigger asChild>
+                <Button data-testid="add-task-story-btn">
+                  <Plus size={16} className="mr-2" />
+                  Add Task
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="task-dialog" data-testid="story-task-dialog">
+                <DialogHeader>
+                  <DialogTitle>Create Task for Story</DialogTitle>
+                </DialogHeader>
+                <div className="task-form">
+                  <div className="form-group">
+                    <Label>Title</Label>
+                    <Input
+                      data-testid="story-task-title"
+                      value={taskForm.title}
+                      onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <Label>Description</Label>
+                    <Textarea
+                      data-testid="story-task-description"
+                      value={taskForm.description}
+                      onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <Label>Assigned To</Label>
+                      <Select value={taskForm.assigned_to} onValueChange={(value) => setTaskForm({ ...taskForm, assigned_to: value })}>
+                        <SelectTrigger data-testid="story-task-assignee">
+                          <SelectValue placeholder="Select member" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Unassigned</SelectItem>
+                          {teamMembers.map(member => (
+                            <SelectItem key={member.id} value={member.name}>{member.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="form-group">
+                      <Label>Priority</Label>
+                      <Select value={taskForm.priority} onValueChange={(value) => setTaskForm({ ...taskForm, priority: value })}>
+                        <SelectTrigger data-testid="story-task-priority">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Low">Low</SelectItem>
+                          <SelectItem value="Medium">Medium</SelectItem>
+                          <SelectItem value="High">High</SelectItem>
+                          <SelectItem value="Critical">Critical</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <Label>Type</Label>
+                      <Select value={taskForm.type} onValueChange={(value) => setTaskForm({ ...taskForm, type: value })}>
+                        <SelectTrigger data-testid="story-task-type">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Task">Task</SelectItem>
+                          <SelectItem value="Bug">Bug</SelectItem>
+                          <SelectItem value="HotFix">HotFix</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="form-group">
+                      <Label>Team</Label>
+                      <Select value={taskForm.team} onValueChange={(value) => setTaskForm({ ...taskForm, team: value })}>
+                        <SelectTrigger data-testid="story-task-team">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Frontend">Frontend</SelectItem>
+                          <SelectItem value="Backend">Backend</SelectItem>
+                          <SelectItem value="QA">QA</SelectItem>
+                          <SelectItem value="Product">Product</SelectItem>
+                          <SelectItem value="Business">Business</SelectItem>
+                          <SelectItem value="Ops">Ops</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <Label>Story Points</Label>
+                      <Input
+                        data-testid="story-task-points"
+                        type="number"
+                        value={taskForm.story_points}
+                        onChange={(e) => setTaskForm({ ...taskForm, story_points: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <Label>Target Date</Label>
+                      <Input
+                        data-testid="story-task-target"
+                        type="date"
+                        value={taskForm.target_date}
+                        onChange={(e) => setTaskForm({ ...taskForm, target_date: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <Button onClick={createTask} data-testid="create-story-task-btn">Create Task</Button>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {tasks.length === 0 ? (
+            <p className="empty-message" data-testid="empty-story-tasks">No tasks yet</p>
+          ) : (
+            <div className="items-grid">
+              {tasks.map(task => (
+                <Card key={task.id} className="item-card" data-testid={`story-task-card-${task.id}`}>
+                  <CardHeader>
+                    <CardTitle>{task.title}</CardTitle>
+                    <CardDescription>{task.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="item-meta">
+                      <span className={`status-badge status-${task.status.toLowerCase().replace('_', '-')}`}>
+                        {task.status.replace('_', ' ')}
+                      </span>
+                      <span className={`priority-badge priority-${task.priority.toLowerCase()}`}>
+                        {task.priority}
+                      </span>
+                      <span className="type-badge">{task.type}</span>
+                    </div>
+                    {task.assigned_to && (
+                      <p className="assigned-to">Assigned to: {task.assigned_to}</p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const KanbanBoard = () => {
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [draggedTask, setDraggedTask] = useState(null);
+  const [showTaskDialog, setShowTaskDialog] = useState(false);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [stories, setStories] = useState([]);
+  const [taskForm, setTaskForm] = useState({
+    title: "",
+    description: "",
+    story_id: "",
+    assigned_to: "",
+    start_date: "",
+    end_date: "",
+    target_date: "",
+    story_points: "",
+    priority: "Medium",
+    type: "Task",
+    team: "Development"
+  });
 
   useEffect(() => {
     fetchProjects();
