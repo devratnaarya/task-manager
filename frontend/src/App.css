@@ -722,21 +722,185 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 1rem;
 }
 
+/* Story Detail */
+.story-detail-header {
+  margin-bottom: 1.5rem;
+}
+
+.story-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.story-main-card {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.story-header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.story-detail-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0F172A;
+  margin-bottom: 0.75rem;
+}
+
+.story-detail-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #E2E8F0;
+}
+
+.story-detail-section:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.story-detail-section h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+}
+
+.story-detail-section p {
+  color: #475569;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.story-tasks-section {
+  margin-top: 2rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #0F172A;
+}
+
+.clickable-card {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clickable-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-color: #CBD5E0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Departments */
+.departments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.department-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #E2E8F0;
+  transition: all 0.2s ease;
+}
+
+.department-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  border-color: #CBD5E0;
+}
+
+.department-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.department-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.color-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+}
+
+.color-option {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+}
+
+.color-option:hover {
+  transform: scale(1.1);
+}
+
+.color-option.selected {
+  border-color: #0F172A;
+  transform: scale(1.05);
+}
+
+.check-mark {
+  color: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
 /* Button Overrides */
 button {
   font-weight: 500;
-  transition: all 0.2s ease;
-  border-radius: 8px;
+  transition: all 0.15s ease;
+  border-radius: 6px;
 }
 
 button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Card Overrides */
 .card {
-  border-radius: 12px;
+  border-radius: 8px;
 }
 
 /* Responsive */
