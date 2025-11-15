@@ -1783,6 +1783,133 @@ const Team = () => {
   );
 };
 
+const Departments = () => {
+  const [departments, setDepartments] = useState([]);
+  const [showDialog, setShowDialog] = useState(false);
+  const [form, setForm] = useState({ name: "", description: "", color: "#3B82F6" });
+
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await axios.get(`${API}/departments`);
+      setDepartments(response.data);
+    } catch (e) {
+      console.error("Error fetching departments:", e);
+    }
+  };
+
+  const addDepartment = async () => {
+    try {
+      await axios.post(`${API}/departments`, form);
+      toast.success("Department added successfully");
+      setShowDialog(false);
+      setForm({ name: "", description: "", color: "#3B82F6" });
+      fetchDepartments();
+    } catch (e) {
+      console.error("Error adding department:", e);
+      toast.error("Failed to add department");
+    }
+  };
+
+  const departmentColors = [
+    { name: "Blue", value: "#3B82F6" },
+    { name: "Green", value: "#10B981" },
+    { name: "Purple", value: "#8B5CF6" },
+    { name: "Orange", value: "#F59E0B" },
+    { name: "Red", value: "#EF4444" },
+    { name: "Teal", value: "#14B8A6" }
+  ];
+
+  return (
+    <div className="page-container" data-testid="departments-page">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Departments</h1>
+          <p className="page-subtitle">Manage your organization departments</p>
+        </div>
+        <Dialog open={showDialog} onOpenChange={setShowDialog}>
+          <DialogTrigger asChild>
+            <Button data-testid="add-department-btn">
+              <Plus size={16} className="mr-2" />
+              Add Department
+            </Button>
+          </DialogTrigger>
+          <DialogContent data-testid="department-dialog">
+            <DialogHeader>
+              <DialogTitle>Add Department</DialogTitle>
+            </DialogHeader>
+            <div className="form-group">
+              <Label>Department Name</Label>
+              <Input
+                data-testid="department-name-input"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="e.g., Frontend, Backend, QA"
+              />
+            </div>
+            <div className="form-group">
+              <Label>Description</Label>
+              <Textarea
+                data-testid="department-description-input"
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder="Department description"
+              />
+            </div>
+            <div className="form-group">
+              <Label>Color</Label>
+              <div className="color-picker-grid">
+                {departmentColors.map(color => (
+                  <div
+                    key={color.value}
+                    className={`color-option ${form.color === color.value ? 'selected' : ''}`}
+                    style={{ backgroundColor: color.value }}
+                    onClick={() => setForm({ ...form, color: color.value })}
+                    data-testid={`color-${color.name.toLowerCase()}`}
+                  >
+                    {form.color === color.value && <span className="check-mark">✓</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Button onClick={addDepartment} data-testid="submit-department-btn">Add Department</Button>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {departments.length === 0 ? (
+        <div className="empty-state" data-testid="empty-departments">
+          <p>No departments yet. Add your first department to organize teams!</p>
+        </div>
+      ) : (
+        <div className="departments-grid">
+          {departments.map(dept => (
+            <Card key={dept.id} className="department-card" data-testid={`department-card-${dept.id}`}>
+              <CardHeader>
+                <div className="department-header">
+                  <div 
+                    className="department-icon" 
+                    style={{ backgroundColor: dept.color }}
+                  >
+                    {dept.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <CardTitle>{dept.name}</CardTitle>
+                    <CardDescription>{dept.description}</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Performance = () => {
   const [performance, setPerformance] = useState(null);
 
