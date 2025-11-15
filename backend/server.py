@@ -422,9 +422,10 @@ async def create_user(input: UserCreate, org_id: str = Depends(get_organization_
     del user_data['password']
     return user_data
 
-@api_router.get("/users", response_model=List[User])
+@api_router.get("/users")
 async def get_users(org_id: str = Depends(get_organization_id)):
-    users = await db.users.find({"organization_id": org_id}, {"_id": 0}).to_list(1000)
+    query = {"organization_id": org_id} if org_id != "null" else {}
+    users = await db.users.find(query, {"_id": 0, "password": 0}).to_list(1000)
     for user in users:
         if isinstance(user['created_at'], str):
             user['created_at'] = datetime.fromisoformat(user['created_at'])
