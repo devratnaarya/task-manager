@@ -1136,18 +1136,138 @@ const KanbanBoard = () => {
           <h1 className="page-title">Kanban Board</h1>
           <p className="page-subtitle">Drag and drop to update task status</p>
         </div>
-        {projects.length > 0 && (
-          <Select value={selectedProject} onValueChange={setSelectedProject}>
-            <SelectTrigger className="project-selector-sm" data-testid="kanban-project-selector">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {projects.map(project => (
-                <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        <div className="header-actions">
+          {projects.length > 0 && (
+            <Select value={selectedProject} onValueChange={setSelectedProject}>
+              <SelectTrigger className="project-selector-sm" data-testid="kanban-project-selector">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map(project => (
+                  <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Dialog open={showTaskDialog} onOpenChange={setShowTaskDialog}>
+            <DialogTrigger asChild>
+              <Button data-testid="kanban-add-task-btn">
+                <Plus size={16} className="mr-2" />
+                Add Task
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="task-dialog" data-testid="kanban-task-dialog">
+              <DialogHeader>
+                <DialogTitle>Create New Task</DialogTitle>
+              </DialogHeader>
+              <div className="task-form">
+                <div className="form-group">
+                  <Label>Title</Label>
+                  <Input
+                    data-testid="kanban-task-title"
+                    value={taskForm.title}
+                    onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <Label>Description</Label>
+                  <Textarea
+                    data-testid="kanban-task-description"
+                    value={taskForm.description}
+                    onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+                  />
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <Label>Story</Label>
+                    <Select value={taskForm.story_id} onValueChange={(value) => setTaskForm({ ...taskForm, story_id: value })}>
+                      <SelectTrigger data-testid="kanban-task-story">
+                        <SelectValue placeholder="Select story" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No Story</SelectItem>
+                        {stories.map(story => (
+                          <SelectItem key={story.id} value={story.id}>{story.title}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="form-group">
+                    <Label>Assigned To</Label>
+                    <Select value={taskForm.assigned_to} onValueChange={(value) => setTaskForm({ ...taskForm, assigned_to: value })}>
+                      <SelectTrigger data-testid="kanban-task-assignee">
+                        <SelectValue placeholder="Select member" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Unassigned</SelectItem>
+                        {teamMembers.map(member => (
+                          <SelectItem key={member.id} value={member.name}>{member.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <Label>Priority</Label>
+                    <Select value={taskForm.priority} onValueChange={(value) => setTaskForm({ ...taskForm, priority: value })}>
+                      <SelectTrigger data-testid="kanban-task-priority">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Low">Low</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="High">High</SelectItem>
+                        <SelectItem value="Critical">Critical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="form-group">
+                    <Label>Type</Label>
+                    <Select value={taskForm.type} onValueChange={(value) => setTaskForm({ ...taskForm, type: value })}>
+                      <SelectTrigger data-testid="kanban-task-type">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Task">Task</SelectItem>
+                        <SelectItem value="Bug">Bug</SelectItem>
+                        <SelectItem value="HotFix">HotFix</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <Label>Team</Label>
+                    <Select value={taskForm.team} onValueChange={(value) => setTaskForm({ ...taskForm, team: value })}>
+                      <SelectTrigger data-testid="kanban-task-team">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Frontend">Frontend</SelectItem>
+                        <SelectItem value="Backend">Backend</SelectItem>
+                        <SelectItem value="QA">QA</SelectItem>
+                        <SelectItem value="Product">Product</SelectItem>
+                        <SelectItem value="Business">Business</SelectItem>
+                        <SelectItem value="Ops">Ops</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="form-group">
+                    <Label>Story Points</Label>
+                    <Input
+                      data-testid="kanban-task-points"
+                      type="number"
+                      value={taskForm.story_points}
+                      onChange={(e) => setTaskForm({ ...taskForm, story_points: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+              <Button onClick={createTask} data-testid="create-kanban-task-btn">Create Task</Button>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {!selectedProject ? (
