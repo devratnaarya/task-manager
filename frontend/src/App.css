@@ -366,21 +366,21 @@ h1, h2, h3, h4, h5, h6 {
 
 .kanban-column {
   background: white;
-  border-radius: 12px;
+  border-radius: 8px;
   min-height: 600px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #E2E8F0;
 }
 
 .kanban-header {
-  padding: 1.25rem;
-  border-bottom: 1px solid #e2e8f0;
-  border-top: 4px solid;
+  padding: 1rem;
+  border-bottom: 1px solid #E2E8F0;
+  border-top: 3px solid;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f9fafb;
-  border-radius: 12px 12px 0 0;
+  background: #F8FAFC;
+  border-radius: 8px 8px 0 0;
 }
 
 .kanban-header h3 {
