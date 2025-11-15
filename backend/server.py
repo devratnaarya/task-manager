@@ -401,16 +401,26 @@ async def update_organization(org_id: str, input: OrganizationUpdate, x_user_rol
     return org
 
 # User Endpoints
-@api_router.post("/users", response_model=User)
+@api_router.post("/users")
 async def create_user(input: UserCreate, org_id: str = Depends(get_organization_id), x_user_name: Optional[str] = Header(None)):
+    # Check if email exists
+    existing = await db.users.find_one({"email": input.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
     user_dict = input.model_dump()
-    user_dict['organization_id'] = org_id
+    user_dict['organization_id'] = org_id if org_id != "null" else None
+    user_dict['password'] = hash_password(user_dict['password'])
     user_obj = User(**user_dict)
     doc = user_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     await db.users.insert_one(doc)
     await log_action(org_id, x_user_name or "System", "created", "user", user_obj.id, user_obj.name)
-    return user_obj
+    
+    # Remove password from response
+    user_data = user_obj.model_dump()
+    del user_data['password']
+    return user_data
 
 @api_router.get("/users", response_model=List[User])
 async def get_users(org_id: str = Depends(get_organization_id)):
