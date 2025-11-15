@@ -85,11 +85,24 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .sidebar-nav {
+  flex: 1;
   margin-top: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   padding: 0 1rem;
+  overflow-y: auto;
+}
+
+.sidebar-footer {
+  padding: 1rem;
+  border-top: 1px solid #E2E8F0;
+}
+
+.logout-button {
+  width: 100%;
+  justify-content: flex-start;
+  color: #DC2626;
 }
 
 .nav-link {
