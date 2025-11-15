@@ -22,6 +22,7 @@ const Sidebar = () => {
     <div className="sidebar" data-testid="sidebar">
       <div className="sidebar-header">
         <h2 className="sidebar-title">TaskFlow</h2>
+        <p className="sidebar-subtitle">Project Management</p>
       </div>
       <nav className="sidebar-nav">
         <Link to="/" className="nav-link" data-testid="nav-dashboard">
@@ -47,6 +48,10 @@ const Sidebar = () => {
         <Link to="/team" className="nav-link" data-testid="nav-team">
           <span className="nav-icon">👥</span>
           Team
+        </Link>
+        <Link to="/departments" className="nav-link" data-testid="nav-departments">
+          <span className="nav-icon">🏢</span>
+          Departments
         </Link>
         <Link to="/performance" className="nav-link" data-testid="nav-performance">
           <span className="nav-icon">📈</span>
