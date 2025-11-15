@@ -1324,9 +1324,29 @@ const KanbanBoard = () => {
 
 const TodoList = () => {
   const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [stories, setStories] = useState([]);
+  const [showTaskDialog, setShowTaskDialog] = useState(false);
+  const [taskForm, setTaskForm] = useState({
+    project_id: "",
+    title: "",
+    description: "",
+    story_id: "",
+    assigned_to: "",
+    start_date: "",
+    end_date: "",
+    target_date: "",
+    story_points: "",
+    priority: "Medium",
+    type: "Task",
+    team: "Development"
+  });
 
   useEffect(() => {
     fetchTodoTasks();
+    fetchProjects();
+    fetchTeamMembers();
   }, []);
 
   const fetchTodoTasks = async () => {
@@ -1335,6 +1355,24 @@ const TodoList = () => {
       setTasks(response.data);
     } catch (e) {
       console.error("Error fetching todo tasks:", e);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const response = await axios.get(`${API}/projects`);
+      setProjects(response.data);
+    } catch (e) {
+      console.error("Error fetching projects:", e);
+    }
+  };
+
+  const fetchTeamMembers = async () => {
+    try {
+      const response = await axios.get(`${API}/team`);
+      setTeamMembers(response.data);
+    } catch (e) {
+      console.error("Error fetching team members:", e);
     }
   };
 
@@ -1349,11 +1387,169 @@ const TodoList = () => {
     }
   };
 
+  const createTask = async () => {
+    if (!taskForm.project_id) {
+      toast.error("Please select a project");
+      return;
+    }
+    try {
+      await axios.post(`${API}/tasks`, taskForm);
+      toast.success("Task created successfully");
+      setShowTaskDialog(false);
+      setTaskForm({
+        project_id: "",
+        title: "",
+        description: "",
+        story_id: "",
+        assigned_to: "",
+        start_date: "",
+        end_date: "",
+        target_date: "",
+        story_points: "",
+        priority: "Medium",
+        type: "Task",
+        team: "Development"
+      });
+      fetchTodoTasks();
+    } catch (e) {
+      console.error("Error creating task:", e);
+      toast.error("Failed to create task");
+    }
+  };
+
   return (
     <div className="page-container" data-testid="todo-page">
       <div className="page-header">
-        <h1 className="page-title">TODO List</h1>
-        <p className="page-subtitle">All tasks pending to start</p>
+        <div>
+          <h1 className="page-title">TODO List</h1>
+          <p className="page-subtitle">All tasks pending to start</p>
+        </div>
+        <Dialog open={showTaskDialog} onOpenChange={setShowTaskDialog}>
+          <DialogTrigger asChild>
+            <Button data-testid="todo-add-task-btn">
+              <Plus size={16} className="mr-2" />
+              Add Task
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="task-dialog" data-testid="todo-task-dialog">
+            <DialogHeader>
+              <DialogTitle>Create New Task</DialogTitle>
+            </DialogHeader>
+            <div className="task-form">
+              <div className="form-group">
+                <Label>Project</Label>
+                <Select value={taskForm.project_id} onValueChange={(value) => setTaskForm({ ...taskForm, project_id: value })}>
+                  <SelectTrigger data-testid="todo-task-project">
+                    <SelectValue placeholder="Select project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map(project => (
+                      <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="form-group">
+                <Label>Title</Label>
+                <Input
+                  data-testid="todo-task-title"
+                  value={taskForm.title}
+                  onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <Label>Description</Label>
+                <Textarea
+                  data-testid="todo-task-description"
+                  value={taskForm.description}
+                  onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+                />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <Label>Assigned To</Label>
+                  <Select value={taskForm.assigned_to} onValueChange={(value) => setTaskForm({ ...taskForm, assigned_to: value })}>
+                    <SelectTrigger data-testid="todo-task-assignee">
+                      <SelectValue placeholder="Select member" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Unassigned</SelectItem>
+                      {teamMembers.map(member => (
+                        <SelectItem key={member.id} value={member.name}>{member.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="form-group">
+                  <Label>Priority</Label>
+                  <Select value={taskForm.priority} onValueChange={(value) => setTaskForm({ ...taskForm, priority: value })}>
+                    <SelectTrigger data-testid="todo-task-priority">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Low">Low</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="High">High</SelectItem>
+                      <SelectItem value="Critical">Critical</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <Label>Type</Label>
+                  <Select value={taskForm.type} onValueChange={(value) => setTaskForm({ ...taskForm, type: value })}>
+                    <SelectTrigger data-testid="todo-task-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Task">Task</SelectItem>
+                      <SelectItem value="Bug">Bug</SelectItem>
+                      <SelectItem value="HotFix">HotFix</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="form-group">
+                  <Label>Team</Label>
+                  <Select value={taskForm.team} onValueChange={(value) => setTaskForm({ ...taskForm, team: value })}>
+                    <SelectTrigger data-testid="todo-task-team">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Frontend">Frontend</SelectItem>
+                      <SelectItem value="Backend">Backend</SelectItem>
+                      <SelectItem value="QA">QA</SelectItem>
+                      <SelectItem value="Product">Product</SelectItem>
+                      <SelectItem value="Business">Business</SelectItem>
+                      <SelectItem value="Ops">Ops</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <Label>Story Points</Label>
+                  <Input
+                    data-testid="todo-task-points"
+                    type="number"
+                    value={taskForm.story_points}
+                    onChange={(e) => setTaskForm({ ...taskForm, story_points: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <Label>Target Date</Label>
+                  <Input
+                    data-testid="todo-task-target"
+                    type="date"
+                    value={taskForm.target_date}
+                    onChange={(e) => setTaskForm({ ...taskForm, target_date: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+            <Button onClick={createTask} data-testid="create-todo-task-btn">Create Task</Button>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {tasks.length === 0 ? (
