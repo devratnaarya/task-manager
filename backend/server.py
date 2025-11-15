@@ -443,17 +443,21 @@ async def get_user(user_id: str, org_id: str = Depends(get_organization_id)):
         user['created_at'] = datetime.fromisoformat(user['created_at'])
     return user
 
-@api_router.patch("/users/{user_id}", response_model=User)
+@api_router.patch("/users/{user_id}")
 async def update_user(user_id: str, input: UserUpdate, org_id: str = Depends(get_organization_id), x_user_name: Optional[str] = Header(None)):
     update_data = {k: v for k, v in input.model_dump().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields to update")
     
-    result = await db.users.update_one({"id": user_id, "organization_id": org_id}, {"$set": update_data})
+    query = {"id": user_id}
+    if org_id != "null":
+        query["organization_id"] = org_id
+    
+    result = await db.users.update_one(query, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     
-    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
     if isinstance(user['created_at'], str):
         user['created_at'] = datetime.fromisoformat(user['created_at'])
     await log_action(org_id, x_user_name or "System", "updated", "user", user_id, user['name'], update_data)
