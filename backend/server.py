@@ -242,12 +242,21 @@ class DepartmentCreate(BaseModel):
     color: str = "#3B82F6"
 
 # Helper functions
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(password: str, hashed: str) -> bool:
+    return hash_password(password) == hashed
+
 async def get_organization_id(x_organization_id: Optional[str] = Header(None)) -> str:
-    if not x_organization_id:
-        raise HTTPException(status_code=400, detail="Organization ID required")
+    if not x_organization_id or x_organization_id == "null":
+        # Allow null for SuperAdmin operations
+        return "null"
     return x_organization_id
 
 async def log_action(org_id: str, user: str, action: str, entity_type: str, entity_id: str, entity_name: str, details: dict = {}):
+    if org_id == "null":
+        return
     action_log = ActionHistory(
         organization_id=org_id,
         user=user,
@@ -260,6 +269,23 @@ async def log_action(org_id: str, user: str, action: str, entity_type: str, enti
     doc = action_log.model_dump()
     doc['timestamp'] = doc['timestamp'].isoformat()
     await db.action_history.insert_one(doc)
+
+# Create super admin on startup
+@app.on_event("startup")
+async def create_super_admin():
+    existing = await db.users.find_one({"email": "admin@gmail.com"})
+    if not existing:
+        super_admin = User(
+            name="Super Admin",
+            email="admin@gmail.com",
+            password=hash_password("12345"),
+            role="SuperAdmin",
+            organization_id=None
+        )
+        doc = super_admin.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        await db.users.insert_one(doc)
+        logger.info("Super admin created: admin@gmail.com / 12345")
 
 # Organization Endpoints (Super Admin only)
 @api_router.post("/organizations", response_model=Organization)
