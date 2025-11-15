@@ -434,7 +434,12 @@ const Projects = () => {
                     <p className="empty-message" data-testid="empty-stories">No stories yet</p>
                   ) : (
                     stories.map(story => (
-                      <Card key={story.id} className="item-card" data-testid={`story-card-${story.id}`}>
+                      <Card 
+                        key={story.id} 
+                        className="item-card clickable-card" 
+                        data-testid={`story-card-${story.id}`}
+                        onClick={() => window.location.href = `/story/${story.id}`}
+                      >
                         <CardHeader>
                           <CardTitle>{story.title}</CardTitle>
                           <CardDescription>{story.description}</CardDescription>
