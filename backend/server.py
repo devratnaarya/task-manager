@@ -55,6 +55,13 @@ class StoryCreate(BaseModel):
     prd: str = ""
     priority: str = "Medium"
 
+class StoryUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    brd: Optional[str] = None
+    prd: Optional[str] = None
+    priority: Optional[str] = None
+
 class Comment(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user: str
@@ -129,6 +136,19 @@ class TeamMemberCreate(BaseModel):
     role: str
     avatar: str = ""
 
+class Department(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: str
+    color: str = "#3B82F6"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class DepartmentCreate(BaseModel):
+    name: str
+    description: str
+    color: str = "#3B82F6"
+
 # Project Endpoints
 @api_router.post("/projects", response_model=Project)
 async def create_project(input: ProjectCreate):
@@ -184,6 +204,25 @@ async def get_story(story_id: str):
         story['created_at'] = datetime.fromisoformat(story['created_at'])
     return story
 
+@api_router.patch("/stories/{story_id}", response_model=Story)
+async def update_story(story_id: str, input: StoryUpdate):
+    update_data = {k: v for k, v in input.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    
+    result = await db.stories.update_one(
+        {"id": story_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Story not found")
+    
+    story = await db.stories.find_one({"id": story_id}, {"_id": 0})
+    if isinstance(story['created_at'], str):
+        story['created_at'] = datetime.fromisoformat(story['created_at'])
+    return story
+
 # Task Endpoints
 @api_router.post("/tasks", response_model=Task)
 async def create_task(input: TaskCreate):
@@ -196,10 +235,12 @@ async def create_task(input: TaskCreate):
     return task_obj
 
 @api_router.get("/tasks", response_model=List[Task])
-async def get_tasks(project_id: Optional[str] = None, status: Optional[str] = None, assigned_to: Optional[str] = None):
+async def get_tasks(project_id: Optional[str] = None, story_id: Optional[str] = None, status: Optional[str] = None, assigned_to: Optional[str] = None):
     query = {}
     if project_id:
         query["project_id"] = project_id
+    if story_id:
+        query["story_id"] = story_id
     if status:
         query["status"] = status
     if assigned_to:
@@ -274,6 +315,24 @@ async def get_team_members():
         if isinstance(member['created_at'], str):
             member['created_at'] = datetime.fromisoformat(member['created_at'])
     return members
+
+# Department Endpoints
+@api_router.post("/departments", response_model=Department)
+async def create_department(input: DepartmentCreate):
+    dept_dict = input.model_dump()
+    dept_obj = Department(**dept_dict)
+    doc = dept_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.departments.insert_one(doc)
+    return dept_obj
+
+@api_router.get("/departments", response_model=List[Department])
+async def get_departments():
+    depts = await db.departments.find({}, {"_id": 0}).to_list(1000)
+    for dept in depts:
+        if isinstance(dept['created_at'], str):
+            dept['created_at'] = datetime.fromisoformat(dept['created_at'])
+    return depts
 
 # Dashboard Endpoints
 @api_router.get("/dashboard/stats")
