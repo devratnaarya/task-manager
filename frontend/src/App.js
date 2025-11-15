@@ -347,9 +347,9 @@ const Projects = () => {
         <div>
           <div className="project-selector">
             <Label>Select Project:</Label>
-            <Select value={selectedProject?.id} onValueChange={(value) => setSelectedProject(projects.find(p => p.id === value))}>
+            <Select value={selectedProject?.id || ""} onValueChange={(value) => setSelectedProject(projects.find(p => p.id === value))}>
               <SelectTrigger data-testid="project-selector">
-                <SelectValue />
+                <SelectValue placeholder="Select a project" />
               </SelectTrigger>
               <SelectContent>
                 {projects.map(project => (
