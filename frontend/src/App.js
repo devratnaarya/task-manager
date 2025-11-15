@@ -807,7 +807,7 @@ const StoryDetail = () => {
                   </div>
                   <div className="form-group">
                     <Label>Priority</Label>
-                    <Select value={editForm.priority} onValueChange={(value) => setEditForm({ ...editForm, priority: value })}>
+                    <Select value={editForm.priority || "Medium"} onValueChange={(value) => setEditForm({ ...editForm, priority: value })}>
                       <SelectTrigger data-testid="edit-story-priority">
                         <SelectValue />
                       </SelectTrigger>
