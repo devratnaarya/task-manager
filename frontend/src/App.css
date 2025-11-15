@@ -283,68 +283,70 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .priority-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .priority-low {
-  background: #e0f2fe;
-  color: #0369a1;
+  background: #DBEAFE;
+  color: #1E40AF;
 }
 
 .priority-medium {
-  background: #fef3c7;
-  color: #92400e;
+  background: #FEF3C7;
+  color: #92400E;
 }
 
 .priority-high {
-  background: #fecaca;
-  color: #991b1b;
+  background: #FEE2E2;
+  color: #991B1B;
 }
 
 .priority-critical {
-  background: #fca5a5;
-  color: #7f1d1d;
+  background: #FCA5A5;
+  color: #7F1D1D;
 }
 
 .status-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .status-todo {
-  background: #f3f4f6;
-  color: #4b5563;
+  background: #F1F5F9;
+  color: #475569;
 }
 
 .status-in-progress {
-  background: #dbeafe;
-  color: #1e40af;
+  background: #DBEAFE;
+  color: #1E40AF;
 }
 
 .status-in-review {
-  background: #fef3c7;
-  color: #92400e;
+  background: #FEF3C7;
+  color: #92400E;
 }
 
 .status-done {
-  background: #d1fae5;
-  color: #065f46;
+  background: #D1FAE5;
+  color: #065F46;
 }
 
 .type-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 600;
-  background: #e5e7eb;
-  color: #374151;
+  background: #F1F5F9;
+  color: #475569;
 }
 
 .assigned-to {
