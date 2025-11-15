@@ -2041,6 +2041,17 @@ const Performance = () => {
 };
 
 function App() {
+  const { isAuthenticated } = useUser();
+
+  if (!isAuthenticated) {
+    return (
+      <div className="App">
+        <Toaster position="top-right" />
+        <Login />
+      </div>
+    );
+  }
+
   return (
     <div className="App">
       <Toaster position="top-right" />
