@@ -287,6 +287,56 @@ async def create_super_admin():
         await db.users.insert_one(doc)
         logger.info("Super admin created: admin@gmail.com / 12345")
 
+# Authentication Endpoints
+@api_router.post("/auth/login", response_model=LoginResponse)
+async def login(input: LoginRequest):
+    user = await db.users.find_one({"email": input.email}, {"_id": 0})
+    if not user or not verify_password(input.password, user['password']):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    if not user.get('is_active', True):
+        raise HTTPException(status_code=403, detail="User account is inactive")
+    
+    # Get organization if user has one
+    organization = None
+    if user.get('organization_id'):
+        organization = await db.organizations.find_one({"id": user['organization_id']}, {"_id": 0})
+        if organization and isinstance(organization.get('created_at'), str):
+            organization['created_at'] = datetime.fromisoformat(organization['created_at'])
+    
+    # Remove password from response
+    user_data = {k: v for k, v in user.items() if k != 'password'}
+    if isinstance(user_data.get('created_at'), str):
+        user_data['created_at'] = datetime.fromisoformat(user_data['created_at'])
+    
+    # Generate simple token (in production, use JWT)
+    token = f"{user['id']}:{user['email']}:{user['role']}"
+    
+    return LoginResponse(
+        user=user_data,
+        organization=organization,
+        token=token
+    )
+
+@api_router.post("/auth/register", response_model=User)
+async def register(input: UserCreate):
+    # Check if email exists
+    existing = await db.users.find_one({"email": input.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    user_dict = input.model_dump()
+    user_dict['password'] = hash_password(user_dict['password'])
+    user_obj = User(**user_dict)
+    doc = user_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.users.insert_one(doc)
+    
+    # Remove password from response
+    user_data = user_obj.model_dump()
+    del user_data['password']
+    return user_data
+
 # Organization Endpoints (Super Admin only)
 @api_router.post("/organizations", response_model=Organization)
 async def create_organization(input: OrganizationCreate, x_user_role: Optional[str] = Header(None)):
