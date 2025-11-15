@@ -1018,11 +1018,13 @@ const KanbanBoard = () => {
 
   useEffect(() => {
     fetchProjects();
+    fetchTeamMembers();
   }, []);
 
   useEffect(() => {
     if (selectedProject) {
       fetchTasks();
+      fetchStories();
     }
   }, [selectedProject]);
 
@@ -1044,6 +1046,50 @@ const KanbanBoard = () => {
       setTasks(response.data);
     } catch (e) {
       console.error("Error fetching tasks:", e);
+    }
+  };
+
+  const fetchTeamMembers = async () => {
+    try {
+      const response = await axios.get(`${API}/team`);
+      setTeamMembers(response.data);
+    } catch (e) {
+      console.error("Error fetching team members:", e);
+    }
+  };
+
+  const fetchStories = async () => {
+    try {
+      const response = await axios.get(`${API}/stories?project_id=${selectedProject}`);
+      setStories(response.data);
+    } catch (e) {
+      console.error("Error fetching stories:", e);
+    }
+  };
+
+  const createTask = async () => {
+    if (!selectedProject) return;
+    try {
+      await axios.post(`${API}/tasks`, { ...taskForm, project_id: selectedProject });
+      toast.success("Task created successfully");
+      setShowTaskDialog(false);
+      setTaskForm({
+        title: "",
+        description: "",
+        story_id: "",
+        assigned_to: "",
+        start_date: "",
+        end_date: "",
+        target_date: "",
+        story_points: "",
+        priority: "Medium",
+        type: "Task",
+        team: "Development"
+      });
+      fetchTasks();
+    } catch (e) {
+      console.error("Error creating task:", e);
+      toast.error("Failed to create task");
     }
   };
 
