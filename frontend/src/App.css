@@ -598,7 +598,7 @@ h1, h2, h3, h4, h5, h6 {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1E40AF;
   color: white;
   display: flex;
   align-items: center;
