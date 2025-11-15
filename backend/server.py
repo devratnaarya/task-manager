@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Header
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Header, Depends
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone
+import base64
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -18,26 +19,57 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
+# Create the main app
 app = FastAPI()
-
-# Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
-# Define Models
+# Models
+class Organization(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    subdomain: str
+    logo: str = ""  # Base64 encoded logo
+    theme: dict = {
+        "primaryColor": "#1E40AF",
+        "secondaryColor": "#3B82F6",
+        "accentColor": "#60A5FA",
+        "backgroundColor": "#F8FAFC",
+        "sidebarColor": "#FFFFFF"
+    }
+    settings: dict = {}
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_active: bool = True
+
+class OrganizationCreate(BaseModel):
+    name: str
+    subdomain: str
+    logo: str = ""
+    theme: Optional[dict] = None
+
+class OrganizationUpdate(BaseModel):
+    name: Optional[str] = None
+    logo: Optional[str] = None
+    theme: Optional[dict] = None
+    settings: Optional[dict] = None
+    is_active: Optional[bool] = None
+
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     email: str
-    role: str = "Developer"  # Admin, Product, Developer, Ops
+    role: str = "Developer"  # SuperAdmin, Admin, Product, Developer, Ops
+    organization_id: Optional[str] = None
     avatar: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_active: bool = True
 
 class UserCreate(BaseModel):
     name: str
     email: str
     role: str = "Developer"
+    organization_id: Optional[str] = None
     avatar: str = ""
 
 class UserUpdate(BaseModel):
@@ -45,13 +77,15 @@ class UserUpdate(BaseModel):
     email: Optional[str] = None
     role: Optional[str] = None
     avatar: Optional[str] = None
+    is_active: Optional[bool] = None
 
 class ActionHistory(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str
     user: str
-    action: str  # created, updated, deleted, status_changed, assigned
-    entity_type: str  # project, story, task, team_member, department
+    action: str
+    entity_type: str
     entity_id: str
     entity_name: str
     details: dict = {}
@@ -60,6 +94,7 @@ class ActionHistory(BaseModel):
 class Project(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str
     name: str
     description: str
     created_by: Optional[str] = None
@@ -72,6 +107,7 @@ class ProjectCreate(BaseModel):
 class Story(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str
     project_id: str
     title: str
     description: str
@@ -96,15 +132,10 @@ class StoryUpdate(BaseModel):
     prd: Optional[str] = None
     priority: Optional[str] = None
 
-class Comment(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user: str
-    text: str
-    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-
 class Task(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str
     project_id: str
     story_id: Optional[str] = None
     title: str
@@ -120,7 +151,7 @@ class Task(BaseModel):
     type: str = "Task"
     status: str = "TODO"
     team: str = "Development"
-    linked_tasks: List[str] = []  # IDs of linked tasks
+    linked_tasks: List[str] = []
     created_by: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -162,6 +193,7 @@ class CommentCreate(BaseModel):
 class TeamMember(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str
     name: str
     email: str
     role: str
@@ -186,6 +218,7 @@ class TeamMemberUpdate(BaseModel):
 class Department(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str
     name: str
     description: str
     color: str = "#3B82F6"
@@ -196,9 +229,15 @@ class DepartmentCreate(BaseModel):
     description: str
     color: str = "#3B82F6"
 
-# Helper function to log actions
-async def log_action(user: str, action: str, entity_type: str, entity_id: str, entity_name: str, details: dict = {}):
+# Helper functions
+async def get_organization_id(x_organization_id: Optional[str] = Header(None)) -> str:
+    if not x_organization_id:
+        raise HTTPException(status_code=400, detail="Organization ID required")
+    return x_organization_id
+
+async def log_action(org_id: str, user: str, action: str, entity_type: str, entity_id: str, entity_name: str, details: dict = {}):
     action_log = ActionHistory(
+        organization_id=org_id,
         user=user,
         action=action,
         entity_type=entity_type,
@@ -210,28 +249,92 @@ async def log_action(user: str, action: str, entity_type: str, entity_id: str, e
     doc['timestamp'] = doc['timestamp'].isoformat()
     await db.action_history.insert_one(doc)
 
+# Organization Endpoints (Super Admin only)
+@api_router.post("/organizations", response_model=Organization)
+async def create_organization(input: OrganizationCreate, x_user_role: Optional[str] = Header(None)):
+    if x_user_role != "SuperAdmin":
+        raise HTTPException(status_code=403, detail="Only super admin can create organizations")
+    
+    # Check if subdomain exists
+    existing = await db.organizations.find_one({"subdomain": input.subdomain})
+    if existing:
+        raise HTTPException(status_code=400, detail="Subdomain already exists")
+    
+    org_dict = input.model_dump()
+    if not org_dict.get('theme'):
+        org_dict['theme'] = {
+            "primaryColor": "#1E40AF",
+            "secondaryColor": "#3B82F6",
+            "accentColor": "#60A5FA",
+            "backgroundColor": "#F8FAFC",
+            "sidebarColor": "#FFFFFF"
+        }
+    org_obj = Organization(**org_dict)
+    doc = org_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.organizations.insert_one(doc)
+    return org_obj
+
+@api_router.get("/organizations", response_model=List[Organization])
+async def get_organizations(x_user_role: Optional[str] = Header(None)):
+    if x_user_role != "SuperAdmin":
+        raise HTTPException(status_code=403, detail="Only super admin can view all organizations")
+    orgs = await db.organizations.find({}, {"_id": 0}).to_list(1000)
+    for org in orgs:
+        if isinstance(org['created_at'], str):
+            org['created_at'] = datetime.fromisoformat(org['created_at'])
+    return orgs
+
+@api_router.get("/organizations/{org_id}", response_model=Organization)
+async def get_organization(org_id: str):
+    org = await db.organizations.find_one({"id": org_id}, {"_id": 0})
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    if isinstance(org['created_at'], str):
+        org['created_at'] = datetime.fromisoformat(org['created_at'])
+    return org
+
+@api_router.patch("/organizations/{org_id}", response_model=Organization)
+async def update_organization(org_id: str, input: OrganizationUpdate, x_user_role: Optional[str] = Header(None)):
+    if x_user_role not in ["SuperAdmin", "Admin"]:
+        raise HTTPException(status_code=403, detail="Only super admin or admin can update organization")
+    
+    update_data = {k: v for k, v in input.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    
+    result = await db.organizations.update_one({"id": org_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    
+    org = await db.organizations.find_one({"id": org_id}, {"_id": 0})
+    if isinstance(org['created_at'], str):
+        org['created_at'] = datetime.fromisoformat(org['created_at'])
+    return org
+
 # User Endpoints
 @api_router.post("/users", response_model=User)
-async def create_user(input: UserCreate):
+async def create_user(input: UserCreate, org_id: str = Depends(get_organization_id), x_user_name: Optional[str] = Header(None)):
     user_dict = input.model_dump()
+    user_dict['organization_id'] = org_id
     user_obj = User(**user_dict)
     doc = user_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     await db.users.insert_one(doc)
-    await log_action(user_obj.name, "created", "user", user_obj.id, user_obj.name)
+    await log_action(org_id, x_user_name or "System", "created", "user", user_obj.id, user_obj.name)
     return user_obj
 
 @api_router.get("/users", response_model=List[User])
-async def get_users():
-    users = await db.users.find({}, {"_id": 0}).to_list(1000)
+async def get_users(org_id: str = Depends(get_organization_id)):
+    users = await db.users.find({"organization_id": org_id}, {"_id": 0}).to_list(1000)
     for user in users:
         if isinstance(user['created_at'], str):
             user['created_at'] = datetime.fromisoformat(user['created_at'])
     return users
 
 @api_router.get("/users/{user_id}", response_model=User)
-async def get_user(user_id: str):
-    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+async def get_user(user_id: str, org_id: str = Depends(get_organization_id)):
+    user = await db.users.find_one({"id": user_id, "organization_id": org_id}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if isinstance(user['created_at'], str):
@@ -239,45 +342,45 @@ async def get_user(user_id: str):
     return user
 
 @api_router.patch("/users/{user_id}", response_model=User)
-async def update_user(user_id: str, input: UserUpdate, x_user_name: Optional[str] = Header(None)):
+async def update_user(user_id: str, input: UserUpdate, org_id: str = Depends(get_organization_id), x_user_name: Optional[str] = Header(None)):
     update_data = {k: v for k, v in input.model_dump().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields to update")
     
-    result = await db.users.update_one({"id": user_id}, {"$set": update_data})
+    result = await db.users.update_one({"id": user_id, "organization_id": org_id}, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     
     user = await db.users.find_one({"id": user_id}, {"_id": 0})
     if isinstance(user['created_at'], str):
         user['created_at'] = datetime.fromisoformat(user['created_at'])
-    
-    await log_action(x_user_name or "System", "updated", "user", user_id, user['name'], update_data)
+    await log_action(org_id, x_user_name or "System", "updated", "user", user_id, user['name'], update_data)
     return user
 
 # Project Endpoints
 @api_router.post("/projects", response_model=Project)
-async def create_project(input: ProjectCreate, x_user_name: Optional[str] = Header(None)):
+async def create_project(input: ProjectCreate, org_id: str = Depends(get_organization_id), x_user_name: Optional[str] = Header(None)):
     project_dict = input.model_dump()
+    project_dict['organization_id'] = org_id
     project_dict['created_by'] = x_user_name
     project_obj = Project(**project_dict)
     doc = project_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     await db.projects.insert_one(doc)
-    await log_action(x_user_name or "System", "created", "project", project_obj.id, project_obj.name)
+    await log_action(org_id, x_user_name or "System", "created", "project", project_obj.id, project_obj.name)
     return project_obj
 
 @api_router.get("/projects", response_model=List[Project])
-async def get_projects():
-    projects = await db.projects.find({}, {"_id": 0}).to_list(1000)
+async def get_projects(org_id: str = Depends(get_organization_id)):
+    projects = await db.projects.find({"organization_id": org_id}, {"_id": 0}).to_list(1000)
     for project in projects:
         if isinstance(project['created_at'], str):
             project['created_at'] = datetime.fromisoformat(project['created_at'])
     return projects
 
 @api_router.get("/projects/{project_id}", response_model=Project)
-async def get_project(project_id: str):
-    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+async def get_project(project_id: str, org_id: str = Depends(get_organization_id)):
+    project = await db.projects.find_one({"id": project_id, "organization_id": org_id}, {"_id": 0})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     if isinstance(project['created_at'], str):
@@ -286,19 +389,22 @@ async def get_project(project_id: str):
 
 # Story Endpoints
 @api_router.post("/stories", response_model=Story)
-async def create_story(input: StoryCreate, x_user_name: Optional[str] = Header(None)):
+async def create_story(input: StoryCreate, org_id: str = Depends(get_organization_id), x_user_name: Optional[str] = Header(None)):
     story_dict = input.model_dump()
+    story_dict['organization_id'] = org_id
     story_dict['created_by'] = x_user_name
     story_obj = Story(**story_dict)
     doc = story_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     await db.stories.insert_one(doc)
-    await log_action(x_user_name or "System", "created", "story", story_obj.id, story_obj.title)
+    await log_action(org_id, x_user_name or "System", "created", "story", story_obj.id, story_obj.title)
     return story_obj
 
 @api_router.get("/stories", response_model=List[Story])
-async def get_stories(project_id: Optional[str] = None):
-    query = {"project_id": project_id} if project_id else {}
+async def get_stories(org_id: str = Depends(get_organization_id), project_id: Optional[str] = None):
+    query = {"organization_id": org_id}
+    if project_id:
+        query["project_id"] = project_id
     stories = await db.stories.find(query, {"_id": 0}).to_list(1000)
     for story in stories:
         if isinstance(story['created_at'], str):
@@ -306,8 +412,8 @@ async def get_stories(project_id: Optional[str] = None):
     return stories
 
 @api_router.get("/stories/{story_id}", response_model=Story)
-async def get_story(story_id: str):
-    story = await db.stories.find_one({"id": story_id}, {"_id": 0})
+async def get_story(story_id: str, org_id: str = Depends(get_organization_id)):
+    story = await db.stories.find_one({"id": story_id, "organization_id": org_id}, {"_id": 0})
     if not story:
         raise HTTPException(status_code=404, detail="Story not found")
     if isinstance(story['created_at'], str):
@@ -315,38 +421,38 @@ async def get_story(story_id: str):
     return story
 
 @api_router.patch("/stories/{story_id}", response_model=Story)
-async def update_story(story_id: str, input: StoryUpdate, x_user_name: Optional[str] = Header(None)):
+async def update_story(story_id: str, input: StoryUpdate, org_id: str = Depends(get_organization_id), x_user_name: Optional[str] = Header(None)):
     update_data = {k: v for k, v in input.model_dump().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields to update")
     
-    result = await db.stories.update_one({"id": story_id}, {"$set": update_data})
+    result = await db.stories.update_one({"id": story_id, "organization_id": org_id}, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Story not found")
     
     story = await db.stories.find_one({"id": story_id}, {"_id": 0})
     if isinstance(story['created_at'], str):
         story['created_at'] = datetime.fromisoformat(story['created_at'])
-    
-    await log_action(x_user_name or "System", "updated", "story", story_id, story['title'], update_data)
+    await log_action(org_id, x_user_name or "System", "updated", "story", story_id, story['title'], update_data)
     return story
 
 # Task Endpoints
 @api_router.post("/tasks", response_model=Task)
-async def create_task(input: TaskCreate, x_user_name: Optional[str] = Header(None)):
+async def create_task(input: TaskCreate, org_id: str = Depends(get_organization_id), x_user_name: Optional[str] = Header(None)):
     task_dict = input.model_dump()
+    task_dict['organization_id'] = org_id
     task_dict['created_by'] = x_user_name
     task_obj = Task(**task_dict)
     doc = task_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     doc['updated_at'] = doc['updated_at'].isoformat()
     await db.tasks.insert_one(doc)
-    await log_action(x_user_name or "System", "created", "task", task_obj.id, task_obj.title)
+    await log_action(org_id, x_user_name or "System", "created", "task", task_obj.id, task_obj.title)
     return task_obj
 
 @api_router.get("/tasks", response_model=List[Task])
-async def get_tasks(project_id: Optional[str] = None, story_id: Optional[str] = None, status: Optional[str] = None, assigned_to: Optional[str] = None):
-    query = {}
+async def get_tasks(org_id: str = Depends(get_organization_id), project_id: Optional[str] = None, story_id: Optional[str] = None, status: Optional[str] = None, assigned_to: Optional[str] = None):
+    query = {"organization_id": org_id}
     if project_id:
         query["project_id"] = project_id
     if story_id:
@@ -364,8 +470,8 @@ async def get_tasks(project_id: Optional[str] = None, story_id: Optional[str] = 
     return tasks
 
 @api_router.get("/tasks/{task_id}", response_model=Task)
-async def get_task(task_id: str):
-    task = await db.tasks.find_one({"id": task_id}, {"_id": 0})
+async def get_task(task_id: str, org_id: str = Depends(get_organization_id)):
+    task = await db.tasks.find_one({"id": task_id, "organization_id": org_id}, {"_id": 0})
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     if isinstance(task['created_at'], str):
@@ -375,17 +481,15 @@ async def get_task(task_id: str):
     return task
 
 @api_router.patch("/tasks/{task_id}", response_model=Task)
-async def update_task(task_id: str, input: TaskUpdate, x_user_name: Optional[str] = Header(None)):
+async def update_task(task_id: str, input: TaskUpdate, org_id: str = Depends(get_organization_id), x_user_name: Optional[str] = Header(None)):
     update_data = {k: v for k, v in input.model_dump().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields to update")
     
     update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    old_task = await db.tasks.find_one({"id": task_id, "organization_id": org_id}, {"_id": 0})
     
-    # Get old task for comparison
-    old_task = await db.tasks.find_one({"id": task_id}, {"_id": 0})
-    
-    result = await db.tasks.update_one({"id": task_id}, {"$set": update_data})
+    result = await db.tasks.update_one({"id": task_id, "organization_id": org_id}, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Task not found")
     
@@ -395,7 +499,6 @@ async def update_task(task_id: str, input: TaskUpdate, x_user_name: Optional[str
     if isinstance(task['updated_at'], str):
         task['updated_at'] = datetime.fromisoformat(task['updated_at'])
     
-    # Log specific action
     action = "updated"
     if 'status' in update_data and old_task and old_task['status'] != update_data['status']:
         action = "status_changed"
@@ -403,42 +506,50 @@ async def update_task(task_id: str, input: TaskUpdate, x_user_name: Optional[str
     elif 'assigned_to' in update_data:
         action = "assigned"
     
-    await log_action(x_user_name or "System", action, "task", task_id, task['title'], update_data)
+    await log_action(org_id, x_user_name or "System", action, "task", task_id, task['title'], update_data)
     return task
 
 @api_router.post("/tasks/{task_id}/comments")
-async def add_comment(task_id: str, input: CommentCreate):
+async def add_comment(task_id: str, input: CommentCreate, org_id: str = Depends(get_organization_id)):
+    from pydantic import BaseModel
+    class Comment(BaseModel):
+        id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+        user: str
+        text: str
+        created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    
     comment = Comment(user=input.user, text=input.text)
-    result = await db.tasks.update_one({"id": task_id}, {"$push": {"comments": comment.model_dump()}})
+    result = await db.tasks.update_one({"id": task_id, "organization_id": org_id}, {"$push": {"comments": comment.model_dump()}})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Task not found")
     
     task = await db.tasks.find_one({"id": task_id}, {"_id": 0})
-    await log_action(input.user, "commented", "task", task_id, task['title'], {"comment": input.text})
+    await log_action(org_id, input.user, "commented", "task", task_id, task['title'], {"comment": input.text})
     return {"message": "Comment added successfully", "comment": comment}
 
 # Team Endpoints
 @api_router.post("/team", response_model=TeamMember)
-async def create_team_member(input: TeamMemberCreate, x_user_name: Optional[str] = Header(None)):
+async def create_team_member(input: TeamMemberCreate, org_id: str = Depends(get_organization_id), x_user_name: Optional[str] = Header(None)):
     member_dict = input.model_dump()
+    member_dict['organization_id'] = org_id
     member_obj = TeamMember(**member_dict)
     doc = member_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     await db.team_members.insert_one(doc)
-    await log_action(x_user_name or "System", "created", "team_member", member_obj.id, member_obj.name)
+    await log_action(org_id, x_user_name or "System", "created", "team_member", member_obj.id, member_obj.name)
     return member_obj
 
 @api_router.get("/team", response_model=List[TeamMember])
-async def get_team_members():
-    members = await db.team_members.find({}, {"_id": 0}).to_list(1000)
+async def get_team_members(org_id: str = Depends(get_organization_id)):
+    members = await db.team_members.find({"organization_id": org_id}, {"_id": 0}).to_list(1000)
     for member in members:
         if isinstance(member['created_at'], str):
             member['created_at'] = datetime.fromisoformat(member['created_at'])
     return members
 
 @api_router.get("/team/{member_id}", response_model=TeamMember)
-async def get_team_member(member_id: str):
-    member = await db.team_members.find_one({"id": member_id}, {"_id": 0})
+async def get_team_member(member_id: str, org_id: str = Depends(get_organization_id)):
+    member = await db.team_members.find_one({"id": member_id, "organization_id": org_id}, {"_id": 0})
     if not member:
         raise HTTPException(status_code=404, detail="Team member not found")
     if isinstance(member['created_at'], str):
@@ -446,46 +557,46 @@ async def get_team_member(member_id: str):
     return member
 
 @api_router.patch("/team/{member_id}", response_model=TeamMember)
-async def update_team_member(member_id: str, input: TeamMemberUpdate, x_user_name: Optional[str] = Header(None)):
+async def update_team_member(member_id: str, input: TeamMemberUpdate, org_id: str = Depends(get_organization_id), x_user_name: Optional[str] = Header(None)):
     update_data = {k: v for k, v in input.model_dump().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields to update")
     
-    result = await db.team_members.update_one({"id": member_id}, {"$set": update_data})
+    result = await db.team_members.update_one({"id": member_id, "organization_id": org_id}, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Team member not found")
     
     member = await db.team_members.find_one({"id": member_id}, {"_id": 0})
     if isinstance(member['created_at'], str):
         member['created_at'] = datetime.fromisoformat(member['created_at'])
-    
-    await log_action(x_user_name or "System", "updated", "team_member", member_id, member['name'], update_data)
+    await log_action(org_id, x_user_name or "System", "updated", "team_member", member_id, member['name'], update_data)
     return member
 
 @api_router.delete("/team/{member_id}")
-async def delete_team_member(member_id: str, x_user_name: Optional[str] = Header(None)):
-    member = await db.team_members.find_one({"id": member_id}, {"_id": 0})
+async def delete_team_member(member_id: str, org_id: str = Depends(get_organization_id), x_user_name: Optional[str] = Header(None)):
+    member = await db.team_members.find_one({"id": member_id, "organization_id": org_id}, {"_id": 0})
     if not member:
         raise HTTPException(status_code=404, detail="Team member not found")
     
     await db.team_members.delete_one({"id": member_id})
-    await log_action(x_user_name or "System", "deleted", "team_member", member_id, member['name'])
+    await log_action(org_id, x_user_name or "System", "deleted", "team_member", member_id, member['name'])
     return {"message": "Team member deleted successfully"}
 
 # Department Endpoints
 @api_router.post("/departments", response_model=Department)
-async def create_department(input: DepartmentCreate, x_user_name: Optional[str] = Header(None)):
+async def create_department(input: DepartmentCreate, org_id: str = Depends(get_organization_id), x_user_name: Optional[str] = Header(None)):
     dept_dict = input.model_dump()
+    dept_dict['organization_id'] = org_id
     dept_obj = Department(**dept_dict)
     doc = dept_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     await db.departments.insert_one(doc)
-    await log_action(x_user_name or "System", "created", "department", dept_obj.id, dept_obj.name)
+    await log_action(org_id, x_user_name or "System", "created", "department", dept_obj.id, dept_obj.name)
     return dept_obj
 
 @api_router.get("/departments", response_model=List[Department])
-async def get_departments():
-    depts = await db.departments.find({}, {"_id": 0}).to_list(1000)
+async def get_departments(org_id: str = Depends(get_organization_id)):
+    depts = await db.departments.find({"organization_id": org_id}, {"_id": 0}).to_list(1000)
     for dept in depts:
         if isinstance(dept['created_at'], str):
             dept['created_at'] = datetime.fromisoformat(dept['created_at'])
@@ -493,8 +604,8 @@ async def get_departments():
 
 # Action History Endpoints
 @api_router.get("/history")
-async def get_action_history(entity_type: Optional[str] = None, entity_id: Optional[str] = None, limit: int = 100):
-    query = {}
+async def get_action_history(org_id: str = Depends(get_organization_id), entity_type: Optional[str] = None, entity_id: Optional[str] = None, limit: int = 100):
+    query = {"organization_id": org_id}
     if entity_type:
         query["entity_type"] = entity_type
     if entity_id:
@@ -508,19 +619,19 @@ async def get_action_history(entity_type: Optional[str] = None, entity_id: Optio
 
 # Dashboard Endpoints
 @api_router.get("/dashboard/stats")
-async def get_dashboard_stats():
-    total_projects = await db.projects.count_documents({})
-    total_tasks = await db.tasks.count_documents({})
-    total_stories = await db.stories.count_documents({})
-    total_members = await db.team_members.count_documents({})
+async def get_dashboard_stats(org_id: str = Depends(get_organization_id)):
+    total_projects = await db.projects.count_documents({"organization_id": org_id})
+    total_tasks = await db.tasks.count_documents({"organization_id": org_id})
+    total_stories = await db.stories.count_documents({"organization_id": org_id})
+    total_members = await db.team_members.count_documents({"organization_id": org_id})
     
-    todo_tasks = await db.tasks.count_documents({"status": "TODO"})
-    in_progress_tasks = await db.tasks.count_documents({"status": "IN_PROGRESS"})
-    in_review_tasks = await db.tasks.count_documents({"status": "IN_REVIEW"})
-    done_tasks = await db.tasks.count_documents({"status": "DONE"})
+    todo_tasks = await db.tasks.count_documents({"organization_id": org_id, "status": "TODO"})
+    in_progress_tasks = await db.tasks.count_documents({"organization_id": org_id, "status": "IN_PROGRESS"})
+    in_review_tasks = await db.tasks.count_documents({"organization_id": org_id, "status": "IN_REVIEW"})
+    done_tasks = await db.tasks.count_documents({"organization_id": org_id, "status": "DONE"})
     
-    high_priority = await db.tasks.count_documents({"priority": "High"})
-    critical_priority = await db.tasks.count_documents({"priority": "Critical"})
+    high_priority = await db.tasks.count_documents({"organization_id": org_id, "priority": "High"})
+    critical_priority = await db.tasks.count_documents({"organization_id": org_id, "priority": "Critical"})
     
     return {
         "total_projects": total_projects,
@@ -540,8 +651,8 @@ async def get_dashboard_stats():
     }
 
 @api_router.get("/dashboard/weekly")
-async def get_weekly_summary():
-    all_tasks = await db.tasks.find({}, {"_id": 0}).to_list(1000)
+async def get_weekly_summary(org_id: str = Depends(get_organization_id)):
+    all_tasks = await db.tasks.find({"organization_id": org_id}, {"_id": 0}).to_list(1000)
     team_summary = {}
     for task in all_tasks:
         team = task.get('team', 'Development')
@@ -565,11 +676,11 @@ async def get_weekly_summary():
     return {"teams": list(team_summary.values())}
 
 @api_router.get("/dashboard/performance")
-async def get_team_performance():
-    members = await db.team_members.find({}, {"_id": 0}).to_list(1000)
+async def get_team_performance(org_id: str = Depends(get_organization_id)):
+    members = await db.team_members.find({"organization_id": org_id}, {"_id": 0}).to_list(1000)
     performance = []
     for member in members:
-        member_tasks = await db.tasks.find({"assigned_to": member['name']}, {"_id": 0}).to_list(1000)
+        member_tasks = await db.tasks.find({"organization_id": org_id, "assigned_to": member['name']}, {"_id": 0}).to_list(1000)
         total = len(member_tasks)
         completed = sum(1 for t in member_tasks if t['status'] == 'DONE')
         in_progress = sum(1 for t in member_tasks if t['status'] == 'IN_PROGRESS')
@@ -588,7 +699,7 @@ async def get_team_performance():
 
 @api_router.get("/")
 async def root():
-    return {"message": "Task Management API"}
+    return {"message": "TaskFlow Multi-Tenant API"}
 
 app.include_router(api_router)
 
@@ -598,6 +709,7 @@ app.add_middleware(
     allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
