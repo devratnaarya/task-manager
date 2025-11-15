@@ -552,10 +552,12 @@ const Projects = () => {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Development">Development</SelectItem>
                                 <SelectItem value="Frontend">Frontend</SelectItem>
                                 <SelectItem value="Backend">Backend</SelectItem>
                                 <SelectItem value="QA">QA</SelectItem>
+                                <SelectItem value="Product">Product</SelectItem>
+                                <SelectItem value="Business">Business</SelectItem>
+                                <SelectItem value="Ops">Ops</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
