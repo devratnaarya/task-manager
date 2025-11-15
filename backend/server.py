@@ -60,6 +60,7 @@ class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     email: str
+    password: str  # Hashed password
     role: str = "Developer"  # SuperAdmin, Admin, Product, Developer, Ops
     organization_id: Optional[str] = None
     avatar: str = ""
@@ -69,6 +70,7 @@ class User(BaseModel):
 class UserCreate(BaseModel):
     name: str
     email: str
+    password: str
     role: str = "Developer"
     organization_id: Optional[str] = None
     avatar: str = ""
@@ -79,6 +81,15 @@ class UserUpdate(BaseModel):
     role: Optional[str] = None
     avatar: Optional[str] = None
     is_active: Optional[bool] = None
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class LoginResponse(BaseModel):
+    user: dict
+    organization: Optional[dict] = None
+    token: str
 
 class ActionHistory(BaseModel):
     model_config = ConfigDict(extra="ignore")
