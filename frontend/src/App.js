@@ -38,46 +38,83 @@ axios.interceptors.request.use((config) => {
 });
 
 const Sidebar = () => {
+  const { currentUser, currentOrganization, logout, canAccessTab } = useUser();
+
   return (
     <div className="sidebar" data-testid="sidebar">
       <div className="sidebar-header">
         <h2 className="sidebar-title">TaskFlow</h2>
-        <p className="sidebar-subtitle">Project Management</p>
+        <p className="sidebar-subtitle">{currentOrganization?.name || 'Project Management'}</p>
+        <div className="user-info">
+          <p className="user-name">{currentUser?.name}</p>
+          <p className="user-role">{currentUser?.role}</p>
+        </div>
       </div>
       <nav className="sidebar-nav">
         <Link to="/" className="nav-link" data-testid="nav-dashboard">
           <span className="nav-icon">📊</span>
           Dashboard
         </Link>
-        <Link to="/projects" className="nav-link" data-testid="nav-projects">
-          <span className="nav-icon">📁</span>
-          Projects
-        </Link>
-        <Link to="/kanban" className="nav-link" data-testid="nav-kanban">
-          <span className="nav-icon">🎯</span>
-          Kanban Board
-        </Link>
-        <Link to="/todo" className="nav-link" data-testid="nav-todo">
-          <span className="nav-icon">✓</span>
-          TODO List
-        </Link>
-        <Link to="/weekly" className="nav-link" data-testid="nav-weekly">
-          <span className="nav-icon">📅</span>
-          Weekly Summary
-        </Link>
-        <Link to="/team" className="nav-link" data-testid="nav-team">
-          <span className="nav-icon">👥</span>
-          Team
-        </Link>
-        <Link to="/departments" className="nav-link" data-testid="nav-departments">
-          <span className="nav-icon">🏢</span>
-          Departments
-        </Link>
-        <Link to="/performance" className="nav-link" data-testid="nav-performance">
-          <span className="nav-icon">📈</span>
-          Performance
-        </Link>
+        {canAccessTab('projects') && (
+          <Link to="/projects" className="nav-link" data-testid="nav-projects">
+            <span className="nav-icon">📁</span>
+            Projects
+          </Link>
+        )}
+        {canAccessTab('kanban') && (
+          <Link to="/kanban" className="nav-link" data-testid="nav-kanban">
+            <span className="nav-icon">🎯</span>
+            Kanban Board
+          </Link>
+        )}
+        {canAccessTab('todo') && (
+          <Link to="/todo" className="nav-link" data-testid="nav-todo">
+            <span className="nav-icon">✓</span>
+            TODO List
+          </Link>
+        )}
+        {canAccessTab('weekly') && (
+          <Link to="/weekly" className="nav-link" data-testid="nav-weekly">
+            <span className="nav-icon">📅</span>
+            Weekly Summary
+          </Link>
+        )}
+        {canAccessTab('team') && (
+          <Link to="/team" className="nav-link" data-testid="nav-team">
+            <span className="nav-icon">👥</span>
+            Team
+          </Link>
+        )}
+        {canAccessTab('departments') && (
+          <Link to="/departments" className="nav-link" data-testid="nav-departments">
+            <span className="nav-icon">🏢</span>
+            Departments
+          </Link>
+        )}
+        {canAccessTab('performance') && (
+          <Link to="/performance" className="nav-link" data-testid="nav-performance">
+            <span className="nav-icon">📈</span>
+            Performance
+          </Link>
+        )}
+        {canAccessTab('organizations') && (
+          <Link to="/organizations" className="nav-link" data-testid="nav-organizations">
+            <span className="nav-icon">🌐</span>
+            Organizations
+          </Link>
+        )}
       </nav>
+      <div className="sidebar-footer">
+        <Button
+          variant="ghost"
+          className="logout-button"
+          onClick={logout}
+          data-testid="logout-button"
+        >
+          <LogOut size={16} className="mr-2" />
+          Logout
+        </Button>
+      </div>
     </div>
   );
 };
