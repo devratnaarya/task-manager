@@ -1992,10 +1992,12 @@ function App() {
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/projects" element={<Projects />} />
+              <Route path="/story/:storyId" element={<StoryDetail />} />
               <Route path="/kanban" element={<KanbanBoard />} />
               <Route path="/todo" element={<TodoList />} />
               <Route path="/weekly" element={<WeeklySummary />} />
               <Route path="/team" element={<Team />} />
+              <Route path="/departments" element={<Departments />} />
               <Route path="/performance" element={<Performance />} />
             </Routes>
           </main>
