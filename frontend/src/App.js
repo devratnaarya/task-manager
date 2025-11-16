@@ -2436,6 +2436,7 @@ function App() {
               <Route path="/team" element={<Team />} />
               <Route path="/departments" element={<Departments />} />
               <Route path="/performance" element={<Performance />} />
+              <Route path="/organizations" element={<Organizations />} />
             </Routes>
           </main>
         </div>
