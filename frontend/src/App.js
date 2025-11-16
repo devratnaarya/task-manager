@@ -1904,12 +1904,90 @@ const Team = () => {
         </Dialog>
       </div>
 
+      {/* Member Detail Dialog */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent data-testid="member-detail-dialog">
+          <DialogHeader>
+            <DialogTitle>Team Member Details</DialogTitle>
+          </DialogHeader>
+          {selectedMember && (
+            <div className="member-detail-content">
+              <div className="form-group">
+                <Label>Name</Label>
+                <Input
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  data-testid="edit-member-name"
+                />
+              </div>
+              <div className="form-group">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  data-testid="edit-member-email"
+                />
+              </div>
+              <div className="form-group">
+                <Label>Role</Label>
+                <Select value={form.role} onValueChange={(value) => setForm({ ...form, role: value })}>
+                  <SelectTrigger data-testid="edit-member-role">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Admin">Admin</SelectItem>
+                    <SelectItem value="Product">Product Manager</SelectItem>
+                    <SelectItem value="Developer">Developer</SelectItem>
+                    <SelectItem value="Ops">Operations</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="form-group">
+                <Label>Department</Label>
+                <Select value={form.department} onValueChange={(value) => setForm({ ...form, department: value })}>
+                  <SelectTrigger data-testid="edit-member-department">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Frontend">Frontend</SelectItem>
+                    <SelectItem value="Backend">Backend</SelectItem>
+                    <SelectItem value="QA">QA</SelectItem>
+                    <SelectItem value="Product">Product</SelectItem>
+                    <SelectItem value="Business">Business</SelectItem>
+                    <SelectItem value="Ops">Ops</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="member-actions">
+                <Button onClick={updateMember} data-testid="update-member-btn">
+                  Update Member
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => deleteMember(selectedMember.id)}
+                  data-testid="delete-member-btn"
+                >
+                  <Trash2 size={16} className="mr-2" />
+                  Remove Member
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {members.length === 0 ? (
         <div className="empty-state" data-testid="empty-team">No team members yet</div>
       ) : (
         <div className="team-grid">
           {members.map(member => (
-            <Card key={member.id} className="member-card" data-testid={`member-card-${member.id}`}>
+            <Card 
+              key={member.id} 
+              className="member-card clickable-card" 
+              data-testid={`member-card-${member.id}`}
+              onClick={() => openMemberDetail(member)}
+            >
               <CardHeader>
                 <div className="member-avatar">{member.name.charAt(0).toUpperCase()}</div>
                 <CardTitle>{member.name}</CardTitle>
@@ -1917,6 +1995,7 @@ const Team = () => {
               </CardHeader>
               <CardContent>
                 <p className="member-email">{member.email}</p>
+                <p className="member-department">{member.department || 'Development'}</p>
               </CardContent>
             </Card>
           ))}
