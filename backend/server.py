@@ -439,6 +439,52 @@ async def update_organization(org_id: str, input: OrganizationUpdate, x_user_rol
         org['created_at'] = datetime.fromisoformat(org['created_at'])
     return org
 
+@api_router.get("/organizations/{org_id}/admin")
+async def get_org_admin_credentials(org_id: str, x_user_role: Optional[str] = Header(None)):
+    if x_user_role != "SuperAdmin":
+        raise HTTPException(status_code=403, detail="Only super admin can view admin credentials")
+    
+    # Find admin user for this organization
+    admin = await db.users.find_one({"organization_id": org_id, "role": "Admin"}, {"_id": 0})
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin user not found")
+    
+    return {
+        "name": admin['name'],
+        "email": admin['email'],
+        "password": admin.get('temp_password', 'Not available - password was changed')
+    }
+
+@api_router.post("/organizations/{org_id}/reset-password")
+async def reset_org_admin_password(org_id: str, x_user_role: Optional[str] = Header(None)):
+    if x_user_role != "SuperAdmin":
+        raise HTTPException(status_code=403, detail="Only super admin can reset passwords")
+    
+    # Find admin user for this organization
+    admin = await db.users.find_one({"organization_id": org_id, "role": "Admin"}, {"_id": 0})
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin user not found")
+    
+    # Generate new password
+    import random
+    import string
+    new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+    
+    # Update password
+    await db.users.update_one(
+        {"id": admin['id']},
+        {"$set": {
+            "password": hash_password(new_password),
+            "temp_password": new_password
+        }}
+    )
+    
+    return {
+        "name": admin['name'],
+        "email": admin['email'],
+        "password": new_password
+    }
+
 # User Endpoints
 @api_router.post("/users")
 async def create_user(input: UserCreate, org_id: str = Depends(get_organization_id), x_user_name: Optional[str] = Header(None)):
