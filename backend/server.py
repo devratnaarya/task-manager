@@ -340,7 +340,7 @@ async def register(input: UserCreate):
     return user_data
 
 # Organization Endpoints (Super Admin only)
-@api_router.post("/organizations", response_model=Organization)
+@api_router.post("/organizations")
 async def create_organization(input: OrganizationCreate, x_user_role: Optional[str] = Header(None)):
     if x_user_role != "SuperAdmin":
         raise HTTPException(status_code=403, detail="Only super admin can create organizations")
@@ -350,20 +350,55 @@ async def create_organization(input: OrganizationCreate, x_user_role: Optional[s
     if existing:
         raise HTTPException(status_code=400, detail="Subdomain already exists")
     
-    org_dict = input.model_dump()
-    if not org_dict.get('theme'):
-        org_dict['theme'] = {
+    # Check if admin email exists
+    existing_user = await db.users.find_one({"email": input.admin_email})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Admin email already exists")
+    
+    # Create organization
+    org_dict = {
+        "name": input.name,
+        "subdomain": input.subdomain,
+        "logo": input.logo or "",
+        "theme": input.theme or {
             "primaryColor": "#1E40AF",
             "secondaryColor": "#3B82F6",
             "accentColor": "#60A5FA",
             "backgroundColor": "#F8FAFC",
             "sidebarColor": "#FFFFFF"
         }
+    }
     org_obj = Organization(**org_dict)
     doc = org_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     await db.organizations.insert_one(doc)
-    return org_obj
+    
+    # Generate random password for admin
+    import random
+    import string
+    admin_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+    
+    # Create admin user for this organization
+    admin_user = User(
+        name=input.admin_name,
+        email=input.admin_email,
+        password=hash_password(admin_password),
+        role="Admin",
+        organization_id=org_obj.id
+    )
+    admin_doc = admin_user.model_dump()
+    admin_doc['created_at'] = admin_doc['created_at'].isoformat()
+    await db.users.insert_one(admin_doc)
+    
+    # Return organization with admin credentials
+    org_response = org_obj.model_dump()
+    org_response['admin_credentials'] = {
+        'email': input.admin_email,
+        'password': admin_password,
+        'name': input.admin_name
+    }
+    
+    return org_response
 
 @api_router.get("/organizations", response_model=List[Organization])
 async def get_organizations(x_user_role: Optional[str] = Header(None)):
