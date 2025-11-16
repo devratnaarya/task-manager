@@ -1195,6 +1195,18 @@ button:hover {
   font-weight: 500;
 }
 
+.org-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.org-card-actions button {
+  width: 100%;
+  justify-content: flex-start;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .kanban-board {
