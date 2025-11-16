@@ -2101,6 +2101,41 @@ const Organizations = () => {
         </Dialog>
       </div>
 
+      {/* Admin Credentials Dialog */}
+      <Dialog open={showCredentialsDialog} onOpenChange={setShowCredentialsDialog}>
+        <DialogContent data-testid="credentials-dialog">
+          <DialogHeader>
+            <DialogTitle>Organization Created Successfully! 🎉</DialogTitle>
+            <DialogDescription>Save these admin credentials - they won't be shown again</DialogDescription>
+          </DialogHeader>
+          {adminCredentials && (
+            <div className="credentials-box">
+              <div className="credentials-item">
+                <Label>Admin Name</Label>
+                <Input value={adminCredentials.name} readOnly />
+              </div>
+              <div className="credentials-item">
+                <Label>Email</Label>
+                <Input value={adminCredentials.email} readOnly />
+              </div>
+              <div className="credentials-item">
+                <Label>Password</Label>
+                <Input value={adminCredentials.password} readOnly className="font-mono font-bold text-lg" />
+              </div>
+              <div className="credentials-warning">
+                ⚠️ Please save these credentials. The admin can now login and manage their organization.
+              </div>
+            </div>
+          )}
+          <Button onClick={() => {
+            navigator.clipboard.writeText(`Email: ${adminCredentials?.email}\nPassword: ${adminCredentials?.password}`);
+            toast.success("Credentials copied to clipboard!");
+          }}>
+            Copy Credentials
+          </Button>
+        </DialogContent>
+      </Dialog>
+
       {/* Settings Dialog */}
       <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
         <DialogContent className="org-dialog" data-testid="organization-settings-dialog">
