@@ -550,7 +550,7 @@ const Projects = () => {
                                 <SelectValue placeholder="Select story" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">No Story</SelectItem>
+                                <SelectItem value="none">No Story</SelectItem>
                                 {stories.map(story => (
                                   <SelectItem key={story.id} value={story.id}>{story.title}</SelectItem>
                                 ))}
