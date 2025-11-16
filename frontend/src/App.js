@@ -1846,10 +1846,14 @@ const Organizations = () => {
   const [organizations, setOrganizations] = useState([]);
   const [showDialog, setShowDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [showCredentialsDialog, setShowCredentialsDialog] = useState(false);
   const [selectedOrg, setSelectedOrg] = useState(null);
+  const [adminCredentials, setAdminCredentials] = useState(null);
   const [form, setForm] = useState({
     name: "",
     subdomain: "",
+    admin_name: "",
+    admin_email: "",
     logo: "",
     theme: {
       primaryColor: "#1E40AF",
