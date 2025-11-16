@@ -1842,6 +1842,373 @@ const Team = () => {
   );
 };
 
+const Organizations = () => {
+  const [organizations, setOrganizations] = useState([]);
+  const [showDialog, setShowDialog] = useState(false);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [selectedOrg, setSelectedOrg] = useState(null);
+  const [form, setForm] = useState({
+    name: "",
+    subdomain: "",
+    logo: "",
+    theme: {
+      primaryColor: "#1E40AF",
+      secondaryColor: "#3B82F6",
+      accentColor: "#60A5FA",
+      backgroundColor: "#F8FAFC",
+      sidebarColor: "#FFFFFF"
+    }
+  });
+
+  useEffect(() => {
+    fetchOrganizations();
+  }, []);
+
+  const fetchOrganizations = async () => {
+    try {
+      const response = await axios.get(`${API}/organizations`);
+      setOrganizations(response.data);
+    } catch (e) {
+      console.error("Error fetching organizations:", e);
+      toast.error("Failed to load organizations");
+    }
+  };
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm({ ...form, logo: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const createOrganization = async () => {
+    if (!form.name || !form.subdomain) {
+      toast.error("Name and subdomain are required");
+      return;
+    }
+
+    try {
+      await axios.post(`${API}/organizations`, form);
+      toast.success("Organization created successfully");
+      setShowDialog(false);
+      setForm({
+        name: "",
+        subdomain: "",
+        logo: "",
+        theme: {
+          primaryColor: "#1E40AF",
+          secondaryColor: "#3B82F6",
+          accentColor: "#60A5FA",
+          backgroundColor: "#F8FAFC",
+          sidebarColor: "#FFFFFF"
+        }
+      });
+      fetchOrganizations();
+    } catch (e) {
+      console.error("Error creating organization:", e);
+      toast.error(e.response?.data?.detail || "Failed to create organization");
+    }
+  };
+
+  const updateOrganization = async () => {
+    if (!selectedOrg) return;
+
+    try {
+      await axios.patch(`${API}/organizations/${selectedOrg.id}`, {
+        name: form.name,
+        logo: form.logo,
+        theme: form.theme
+      });
+      toast.success("Organization updated successfully");
+      setShowSettingsDialog(false);
+      setSelectedOrg(null);
+      fetchOrganizations();
+    } catch (e) {
+      console.error("Error updating organization:", e);
+      toast.error("Failed to update organization");
+    }
+  };
+
+  const openSettings = (org) => {
+    setSelectedOrg(org);
+    setForm({
+      name: org.name,
+      subdomain: org.subdomain,
+      logo: org.logo || "",
+      theme: org.theme || {
+        primaryColor: "#1E40AF",
+        secondaryColor: "#3B82F6",
+        accentColor: "#60A5FA",
+        backgroundColor: "#F8FAFC",
+        sidebarColor: "#FFFFFF"
+      }
+    });
+    setShowSettingsDialog(true);
+  };
+
+  return (
+    <div className="page-container" data-testid="organizations-page">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Organizations</h1>
+          <p className="page-subtitle">Manage all organizations in the system</p>
+        </div>
+        <Dialog open={showDialog} onOpenChange={setShowDialog}>
+          <DialogTrigger asChild>
+            <Button data-testid="create-organization-btn">
+              <Plus size={16} className="mr-2" />
+              Create Organization
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="org-dialog" data-testid="organization-dialog">
+            <DialogHeader>
+              <DialogTitle>Create New Organization</DialogTitle>
+              <DialogDescription>Set up a new organization with custom branding</DialogDescription>
+            </DialogHeader>
+            <div className="org-form">
+              <div className="form-group">
+                <Label>Organization Name</Label>
+                <Input
+                  data-testid="org-name-input"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="e.g., Acme Corp"
+                />
+              </div>
+              <div className="form-group">
+                <Label>Subdomain</Label>
+                <Input
+                  data-testid="org-subdomain-input"
+                  value={form.subdomain}
+                  onChange={(e) => setForm({ ...form, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                  placeholder="e.g., acme"
+                />
+                <p className="text-sm text-gray-500 mt-1">URL: {form.subdomain || 'subdomain'}.taskflow.com</p>
+              </div>
+              <div className="form-group">
+                <Label>Logo (Optional)</Label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  data-testid="org-logo-input"
+                />
+                {form.logo && (
+                  <div className="logo-preview">
+                    <img src={form.logo} alt="Logo preview" />
+                  </div>
+                )}
+              </div>
+              <div className="form-group">
+                <Label>Theme Colors</Label>
+                <div className="theme-colors-grid">
+                  <div className="color-input-group">
+                    <Label className="text-xs">Primary</Label>
+                    <Input
+                      type="color"
+                      value={form.theme.primaryColor}
+                      onChange={(e) => setForm({ ...form, theme: { ...form.theme, primaryColor: e.target.value } })}
+                      data-testid="org-primary-color"
+                    />
+                  </div>
+                  <div className="color-input-group">
+                    <Label className="text-xs">Secondary</Label>
+                    <Input
+                      type="color"
+                      value={form.theme.secondaryColor}
+                      onChange={(e) => setForm({ ...form, theme: { ...form.theme, secondaryColor: e.target.value } })}
+                      data-testid="org-secondary-color"
+                    />
+                  </div>
+                  <div className="color-input-group">
+                    <Label className="text-xs">Accent</Label>
+                    <Input
+                      type="color"
+                      value={form.theme.accentColor}
+                      onChange={(e) => setForm({ ...form, theme: { ...form.theme, accentColor: e.target.value } })}
+                      data-testid="org-accent-color"
+                    />
+                  </div>
+                  <div className="color-input-group">
+                    <Label className="text-xs">Background</Label>
+                    <Input
+                      type="color"
+                      value={form.theme.backgroundColor}
+                      onChange={(e) => setForm({ ...form, theme: { ...form.theme, backgroundColor: e.target.value } })}
+                      data-testid="org-bg-color"
+                    />
+                  </div>
+                  <div className="color-input-group">
+                    <Label className="text-xs">Sidebar</Label>
+                    <Input
+                      type="color"
+                      value={form.theme.sidebarColor}
+                      onChange={(e) => setForm({ ...form, theme: { ...form.theme, sidebarColor: e.target.value } })}
+                      data-testid="org-sidebar-color"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <Button onClick={createOrganization} data-testid="submit-organization-btn">
+              Create Organization
+            </Button>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Settings Dialog */}
+      <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
+        <DialogContent className="org-dialog" data-testid="organization-settings-dialog">
+          <DialogHeader>
+            <DialogTitle>Organization Settings</DialogTitle>
+            <DialogDescription>Update organization branding and theme</DialogDescription>
+          </DialogHeader>
+          <div className="org-form">
+            <div className="form-group">
+              <Label>Organization Name</Label>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                data-testid="edit-org-name"
+              />
+            </div>
+            <div className="form-group">
+              <Label>Subdomain (Read-only)</Label>
+              <Input value={form.subdomain} disabled />
+            </div>
+            <div className="form-group">
+              <Label>Logo</Label>
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                data-testid="edit-org-logo"
+              />
+              {form.logo && (
+                <div className="logo-preview">
+                  <img src={form.logo} alt="Logo preview" />
+                </div>
+              )}
+            </div>
+            <div className="form-group">
+              <Label>Theme Colors</Label>
+              <div className="theme-colors-grid">
+                <div className="color-input-group">
+                  <Label className="text-xs">Primary</Label>
+                  <Input
+                    type="color"
+                    value={form.theme.primaryColor}
+                    onChange={(e) => setForm({ ...form, theme: { ...form.theme, primaryColor: e.target.value } })}
+                  />
+                </div>
+                <div className="color-input-group">
+                  <Label className="text-xs">Secondary</Label>
+                  <Input
+                    type="color"
+                    value={form.theme.secondaryColor}
+                    onChange={(e) => setForm({ ...form, theme: { ...form.theme, secondaryColor: e.target.value } })}
+                  />
+                </div>
+                <div className="color-input-group">
+                  <Label className="text-xs">Accent</Label>
+                  <Input
+                    type="color"
+                    value={form.theme.accentColor}
+                    onChange={(e) => setForm({ ...form, theme: { ...form.theme, accentColor: e.target.value } })}
+                  />
+                </div>
+                <div className="color-input-group">
+                  <Label className="text-xs">Background</Label>
+                  <Input
+                    type="color"
+                    value={form.theme.backgroundColor}
+                    onChange={(e) => setForm({ ...form, theme: { ...form.theme, backgroundColor: e.target.value } })}
+                  />
+                </div>
+                <div className="color-input-group">
+                  <Label className="text-xs">Sidebar</Label>
+                  <Input
+                    type="color"
+                    value={form.theme.sidebarColor}
+                    onChange={(e) => setForm({ ...form, theme: { ...form.theme, sidebarColor: e.target.value } })}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <Button onClick={updateOrganization} data-testid="update-organization-btn">
+            Update Organization
+          </Button>
+        </DialogContent>
+      </Dialog>
+
+      {organizations.length === 0 ? (
+        <div className="empty-state" data-testid="empty-organizations">
+          <p>No organizations yet. Create your first organization!</p>
+        </div>
+      ) : (
+        <div className="organizations-grid">
+          {organizations.map(org => (
+            <Card key={org.id} className="organization-card" data-testid={`org-card-${org.id}`}>
+              <CardHeader>
+                <div className="org-card-header">
+                  {org.logo ? (
+                    <img src={org.logo} alt={org.name} className="org-logo" />
+                  ) : (
+                    <div className="org-logo-placeholder" style={{ backgroundColor: org.theme?.primaryColor }}>
+                      {org.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="org-info">
+                    <CardTitle>{org.name}</CardTitle>
+                    <CardDescription>{org.subdomain}.taskflow.com</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="org-theme-preview">
+                  <div className="theme-colors">
+                    <div 
+                      className="theme-color-swatch" 
+                      style={{ backgroundColor: org.theme?.primaryColor }}
+                      title="Primary"
+                    />
+                    <div 
+                      className="theme-color-swatch" 
+                      style={{ backgroundColor: org.theme?.secondaryColor }}
+                      title="Secondary"
+                    />
+                    <div 
+                      className="theme-color-swatch" 
+                      style={{ backgroundColor: org.theme?.accentColor }}
+                      title="Accent"
+                    />
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 w-full"
+                  onClick={() => openSettings(org)}
+                  data-testid={`edit-org-${org.id}`}
+                >
+                  <Edit2 size={14} className="mr-2" />
+                  Edit Settings
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Departments = () => {
   const [departments, setDepartments] = useState([]);
   const [showDialog, setShowDialog] = useState(false);
