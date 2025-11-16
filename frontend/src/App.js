@@ -1988,6 +1988,7 @@ const Organizations = () => {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="e.g., Acme Corp"
+                  required
                 />
               </div>
               <div className="form-group">
@@ -1997,8 +1998,36 @@ const Organizations = () => {
                   value={form.subdomain}
                   onChange={(e) => setForm({ ...form, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
                   placeholder="e.g., acme"
+                  required
                 />
                 <p className="text-sm text-gray-500 mt-1">URL: {form.subdomain || 'subdomain'}.taskflow.com</p>
+              </div>
+              
+              <div className="form-section-header">
+                <h3>Organization Admin</h3>
+                <p className="text-sm text-gray-500">Admin credentials will be auto-generated</p>
+              </div>
+              
+              <div className="form-group">
+                <Label>Admin Name</Label>
+                <Input
+                  data-testid="org-admin-name-input"
+                  value={form.admin_name}
+                  onChange={(e) => setForm({ ...form, admin_name: e.target.value })}
+                  placeholder="e.g., John Doe"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <Label>Admin Email</Label>
+                <Input
+                  type="email"
+                  data-testid="org-admin-email-input"
+                  value={form.admin_email}
+                  onChange={(e) => setForm({ ...form, admin_email: e.target.value })}
+                  placeholder="e.g., admin@acme.com"
+                  required
+                />
               </div>
               <div className="form-group">
                 <Label>Logo (Optional)</Label>
