@@ -1745,8 +1745,11 @@ const WeeklySummary = () => {
 
 const Team = () => {
   const [members, setMembers] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [showDialog, setShowDialog] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", role: "", avatar: "" });
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [form, setForm] = useState({ name: "", email: "", role: "Developer", department: "Development", avatar: "" });
 
   useEffect(() => {
     fetchMembers();
