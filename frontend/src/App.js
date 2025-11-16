@@ -1890,18 +1890,25 @@ const Organizations = () => {
   };
 
   const createOrganization = async () => {
-    if (!form.name || !form.subdomain) {
-      toast.error("Name and subdomain are required");
+    if (!form.name || !form.subdomain || !form.admin_name || !form.admin_email) {
+      toast.error("All fields are required");
       return;
     }
 
     try {
-      await axios.post(`${API}/organizations`, form);
+      const response = await axios.post(`${API}/organizations`, form);
       toast.success("Organization created successfully");
+      
+      // Show admin credentials
+      setAdminCredentials(response.data.admin_credentials);
       setShowDialog(false);
+      setShowCredentialsDialog(true);
+      
       setForm({
         name: "",
         subdomain: "",
+        admin_name: "",
+        admin_email: "",
         logo: "",
         theme: {
           primaryColor: "#1E40AF",
