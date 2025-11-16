@@ -1753,6 +1753,7 @@ const Team = () => {
 
   useEffect(() => {
     fetchMembers();
+    fetchDepartments();
   }, []);
 
   const fetchMembers = async () => {
@@ -1764,17 +1765,72 @@ const Team = () => {
     }
   };
 
+  const fetchDepartments = async () => {
+    try {
+      const response = await axios.get(`${API}/departments`);
+      setDepartments(response.data);
+    } catch (e) {
+      console.error("Error fetching departments:", e);
+    }
+  };
+
   const addMember = async () => {
+    if (!form.name || !form.email || !form.role) {
+      toast.error("Name, email, and role are required");
+      return;
+    }
+    
     try {
       await axios.post(`${API}/team`, form);
       toast.success("Team member added successfully");
       setShowDialog(false);
-      setForm({ name: "", email: "", role: "", avatar: "" });
+      setForm({ name: "", email: "", role: "Developer", department: "Development", avatar: "" });
       fetchMembers();
     } catch (e) {
       console.error("Error adding team member:", e);
       toast.error("Failed to add team member");
     }
+  };
+
+  const updateMember = async () => {
+    if (!selectedMember) return;
+    
+    try {
+      await axios.patch(`${API}/team/${selectedMember.id}`, form);
+      toast.success("Team member updated successfully");
+      setShowDetailDialog(false);
+      setSelectedMember(null);
+      fetchMembers();
+    } catch (e) {
+      console.error("Error updating team member:", e);
+      toast.error("Failed to update team member");
+    }
+  };
+
+  const deleteMember = async (memberId) => {
+    if (!window.confirm("Are you sure you want to remove this team member?")) return;
+    
+    try {
+      await axios.delete(`${API}/team/${memberId}`);
+      toast.success("Team member removed successfully");
+      setShowDetailDialog(false);
+      fetchMembers();
+    } catch (e) {
+      console.error("Error deleting team member:", e);
+      toast.error("Failed to remove team member");
+    }
+  };
+
+  const openMemberDetail = (member) => {
+    setSelectedMember(member);
+    setForm({
+      name: member.name,
+      email: member.email,
+      role: member.role,
+      department: member.department || "Development",
+      avatar: member.avatar || ""
+    });
+    setShowDetailDialog(true);
   };
 
   return (
