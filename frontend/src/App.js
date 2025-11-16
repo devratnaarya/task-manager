@@ -2124,6 +2124,31 @@ const Organizations = () => {
     setShowSettingsDialog(true);
   };
 
+  const viewCredentials = async (org) => {
+    try {
+      const response = await axios.get(`${API}/organizations/${org.id}/admin`);
+      setAdminCredentials(response.data);
+      setShowCredentialsDialog(true);
+    } catch (e) {
+      console.error("Error fetching credentials:", e);
+      toast.error(e.response?.data?.detail || "Failed to retrieve credentials");
+    }
+  };
+
+  const resetPassword = async (org) => {
+    if (!window.confirm(`Reset password for ${org.name} admin?`)) return;
+
+    try {
+      const response = await axios.post(`${API}/organizations/${org.id}/reset-password`);
+      setAdminCredentials(response.data);
+      setShowCredentialsDialog(true);
+      toast.success("Password reset successfully");
+    } catch (e) {
+      console.error("Error resetting password:", e);
+      toast.error("Failed to reset password");
+    }
+  };
+
   return (
     <div className="page-container" data-testid="organizations-page">
       <div className="page-header">
