@@ -1130,6 +1130,71 @@ button:hover {
   border-color: #CBD5E0;
 }
 
+.form-section-header {
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #E2E8F0;
+}
+
+.form-section-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0F172A;
+  margin-bottom: 0.25rem;
+}
+
+.credentials-box {
+  background: #F8FAFC;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 2px solid #E2E8F0;
+}
+
+.credentials-item {
+  margin-bottom: 1rem;
+}
+
+.credentials-item:last-of-type {
+  margin-bottom: 0;
+}
+
+.credentials-warning {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #FEF3C7;
+  border-left: 4px solid #F59E0B;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #92400E;
+  font-weight: 500;
+}
+
+.member-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.member-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #E2E8F0;
+}
+
+.member-actions button {
+  flex: 1;
+}
+
+.member-department {
+  font-size: 0.75rem;
+  color: #64748B;
+  margin-top: 0.25rem;
+  font-weight: 500;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .kanban-board {
