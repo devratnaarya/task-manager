@@ -384,6 +384,7 @@ async def create_organization(input: OrganizationCreate, x_user_role: Optional[s
         name=input.admin_name,
         email=input.admin_email,
         password=hash_password(admin_password),
+        temp_password=admin_password,  # Store for retrieval
         role="Admin",
         organization_id=org_obj.id
     )
