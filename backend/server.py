@@ -45,6 +45,8 @@ class Organization(BaseModel):
 class OrganizationCreate(BaseModel):
     name: str
     subdomain: str
+    admin_name: str
+    admin_email: str
     logo: str = ""
     theme: Optional[dict] = None
 
