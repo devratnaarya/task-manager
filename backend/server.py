@@ -66,6 +66,7 @@ class User(BaseModel):
     role: str = "Developer"  # SuperAdmin, Admin, Product, Developer, Ops
     organization_id: Optional[str] = None
     avatar: str = ""
+    temp_password: Optional[str] = None  # Store temporary password for retrieval
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_active: bool = True
 
