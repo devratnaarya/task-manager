@@ -2428,16 +2428,33 @@ const Organizations = () => {
                     />
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-3 w-full"
-                  onClick={() => openSettings(org)}
-                  data-testid={`edit-org-${org.id}`}
-                >
-                  <Edit2 size={14} className="mr-2" />
-                  Edit Settings
-                </Button>
+                <div className="org-card-actions">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openSettings(org)}
+                    data-testid={`edit-org-${org.id}`}
+                  >
+                    <Edit2 size={14} className="mr-2" />
+                    Settings
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => viewCredentials(org)}
+                    data-testid={`view-creds-${org.id}`}
+                  >
+                    View Credentials
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => resetPassword(org)}
+                    data-testid={`reset-pwd-${org.id}`}
+                  >
+                    Reset Password
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
