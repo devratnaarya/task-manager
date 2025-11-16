@@ -1005,6 +1005,131 @@ button:hover {
   text-align: center;
 }
 
+/* Organizations */
+.organizations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.organization-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #E2E8F0;
+  transition: all 0.2s ease;
+}
+
+.organization-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  border-color: #CBD5E0;
+}
+
+.org-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.org-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid #E2E8F0;
+}
+
+.org-logo-placeholder {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.org-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.org-theme-preview {
+  margin-top: 1rem;
+}
+
+.theme-colors {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.theme-color-swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  border: 2px solid #E2E8F0;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.theme-color-swatch:hover {
+  transform: scale(1.1);
+}
+
+.org-dialog {
+  max-width: 600px;
+}
+
+.org-form {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.logo-preview {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  background: #F8FAFC;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.logo-preview img {
+  max-width: 200px;
+  max-height: 100px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.theme-colors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.color-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.color-input-group input[type="color"] {
+  width: 100%;
+  height: 50px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px solid #E2E8F0;
+}
+
+.color-input-group input[type="color"]:hover {
+  border-color: #CBD5E0;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .kanban-board {
