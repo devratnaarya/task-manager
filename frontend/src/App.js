@@ -564,7 +564,7 @@ const Projects = () => {
                                 <SelectValue placeholder="Select member" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">Unassigned</SelectItem>
+                                <SelectItem value="unassigned">Unassigned</SelectItem>
                                 {teamMembers.map(member => (
                                   <SelectItem key={member.id} value={member.name}>{member.name}</SelectItem>
                                 ))}
