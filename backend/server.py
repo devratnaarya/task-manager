@@ -633,6 +633,13 @@ async def create_task(input: TaskCreate, org_id: str = Depends(get_organization_
     task_dict = input.model_dump()
     task_dict['organization_id'] = org_id
     task_dict['created_by'] = x_user_name
+    
+    # Handle "none" and "unassigned" values
+    if task_dict.get('story_id') == 'none':
+        task_dict['story_id'] = None
+    if task_dict.get('assigned_to') == 'unassigned':
+        task_dict['assigned_to'] = None
+    
     task_obj = Task(**task_dict)
     doc = task_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
