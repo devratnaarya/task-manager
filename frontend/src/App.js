@@ -712,7 +712,7 @@ const StoryDetail = () => {
   const [taskForm, setTaskForm] = useState({
     title: "",
     description: "",
-    assigned_to: "",
+    assigned_to: "unassigned",
     start_date: "",
     end_date: "",
     target_date: "",
