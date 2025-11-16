@@ -684,6 +684,12 @@ async def update_task(task_id: str, input: TaskUpdate, org_id: str = Depends(get
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields to update")
     
+    # Handle "none" and "unassigned" values
+    if update_data.get('story_id') == 'none':
+        update_data['story_id'] = None
+    if update_data.get('assigned_to') == 'unassigned':
+        update_data['assigned_to'] = None
+    
     update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
     old_task = await db.tasks.find_one({"id": task_id, "organization_id": org_id}, {"_id": 0})
     
