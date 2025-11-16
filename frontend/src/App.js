@@ -1854,6 +1854,8 @@ const Team = () => {
                 data-testid="member-name-input"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Enter member name"
+                required
               />
             </div>
             <div className="form-group">
@@ -1863,16 +1865,39 @@ const Team = () => {
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="Enter email address"
+                required
               />
             </div>
             <div className="form-group">
               <Label>Role</Label>
-              <Input
-                data-testid="member-role-input"
-                value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
-                placeholder="e.g., Frontend Developer"
-              />
+              <Select value={form.role} onValueChange={(value) => setForm({ ...form, role: value })}>
+                <SelectTrigger data-testid="member-role-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Admin">Admin</SelectItem>
+                  <SelectItem value="Product">Product Manager</SelectItem>
+                  <SelectItem value="Developer">Developer</SelectItem>
+                  <SelectItem value="Ops">Operations</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="form-group">
+              <Label>Department</Label>
+              <Select value={form.department} onValueChange={(value) => setForm({ ...form, department: value })}>
+                <SelectTrigger data-testid="member-department-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Frontend">Frontend</SelectItem>
+                  <SelectItem value="Backend">Backend</SelectItem>
+                  <SelectItem value="QA">QA</SelectItem>
+                  <SelectItem value="Product">Product</SelectItem>
+                  <SelectItem value="Business">Business</SelectItem>
+                  <SelectItem value="Ops">Ops</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <Button onClick={addMember} data-testid="submit-member-btn">Add Member</Button>
           </DialogContent>
