@@ -242,8 +242,8 @@ const Projects = () => {
   const [taskForm, setTaskForm] = useState({
     title: "",
     description: "",
-    story_id: "",
-    assigned_to: "",
+    story_id: "none",
+    assigned_to: "unassigned",
     start_date: "",
     end_date: "",
     target_date: "",
